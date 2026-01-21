@@ -76,6 +76,12 @@ const OneMoreLine = () => {
   const [gameScale, setGameScale] = useState(1);
   const [, forceRender] = useState(0);
 
+  // Settings state
+  const [showHookIndicator, setShowHookIndicator] = useState(true);
+  const [gravityEnabled, setGravityEnabled] = useState(true);
+  const [speedMultiplier, setSpeedMultiplier] = useState(1.0);
+  const [showSettings, setShowSettings] = useState(false);
+
   // Game state refs (mutable, don't trigger re-renders)
   const gameRef = useRef({
     playerPos: { x: 200, y: 500 },
@@ -462,16 +468,18 @@ const OneMoreLine = () => {
         // Swinging around node
         const distanceFactor = Math.max(0.5, Math.min(1.5, game.hookDistance / 100));
         const spinSpeed = 0.055 / distanceFactor;
-        const finalSpinSpeed = spinSpeed * game.spinDirection * delta;
+        const finalSpinSpeed = spinSpeed * game.spinDirection * delta * speedMultiplier;
 
         game.hookAngle += finalSpinSpeed;
         newX = game.hookedNode.x + Math.cos(game.hookAngle) * game.hookDistance;
         newY = game.hookedNode.y + Math.sin(game.hookAngle) * game.hookDistance;
       } else {
-        // Free flight with gravity
-        game.playerVelocity.y += 0.015 * delta;
-        newX = game.playerPos.x + game.playerVelocity.x * delta;
-        newY = game.playerPos.y + game.playerVelocity.y * delta;
+        // Free flight with optional gravity
+        if (gravityEnabled) {
+          game.playerVelocity.y += 0.015 * delta;
+        }
+        newX = game.playerPos.x + game.playerVelocity.x * delta * speedMultiplier;
+        newY = game.playerPos.y + game.playerVelocity.y * delta * speedMultiplier;
       }
 
       // Collision detection
@@ -548,7 +556,7 @@ const OneMoreLine = () => {
         gameLoopRef.current = null;
       }
     };
-  }, [gameState, gameBounds, generateNewNodes, findClosestHookableNode, endGame, drawTrail]);
+  }, [gameState, gameBounds, generateNewNodes, findClosestHookableNode, endGame, drawTrail, gravityEnabled, speedMultiplier]);
 
   // Canvas setup
   useEffect(() => {
@@ -617,6 +625,18 @@ const OneMoreLine = () => {
               )}
             </button>
           )}
+
+          {/* Settings button */}
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className={`p-2 rounded-full transition-colors ${showSettings ? 'bg-pink-600/50 text-pink-200' : 'bg-gray-800/50 hover:bg-gray-700/50 text-white'}`}
+            aria-label="Settings"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -686,7 +706,7 @@ const OneMoreLine = () => {
 
               return (
                 <React.Fragment key={node.id}>
-                  {isNearestHookable && !game.hookedNode && (
+                  {showHookIndicator && isNearestHookable && !game.hookedNode && (
                     <div
                       className="absolute rounded-full"
                       style={{
@@ -848,25 +868,111 @@ const OneMoreLine = () => {
         </div>
       </div>
 
+      {/* Settings Panel */}
+      {showSettings && (
+        <div className="w-full max-w-lg mt-3 p-4 bg-gray-800/80 rounded-xl backdrop-blur-sm">
+          <div className="text-sm font-semibold text-white mb-3">Game Settings</div>
+
+          {/* Toggle Row */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {/* Hook Indicator Toggle */}
+            <button
+              onClick={() => setShowHookIndicator(!showHookIndicator)}
+              className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                showHookIndicator
+                  ? 'bg-pink-600 text-white'
+                  : 'bg-gray-700 text-gray-400'
+              }`}
+            >
+              Hook Indicator: {showHookIndicator ? 'ON' : 'OFF'}
+            </button>
+
+            {/* Gravity Toggle */}
+            <button
+              onClick={() => setGravityEnabled(!gravityEnabled)}
+              className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                gravityEnabled
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-700 text-gray-400'
+              }`}
+            >
+              Gravity: {gravityEnabled ? 'ON' : 'OFF'}
+            </button>
+
+            {/* Trail Toggle */}
+            <button
+              onClick={toggleTrailMode}
+              className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                game.infiniteTrail
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gray-700 text-gray-400'
+              }`}
+            >
+              Infinite Trail: {game.infiniteTrail ? 'ON' : 'OFF'}
+            </button>
+          </div>
+
+          {/* Speed Slider */}
+          <div className="mb-2">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-gray-400">Game Speed</span>
+              <span className="text-xs font-mono text-white">{speedMultiplier.toFixed(2)}x</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSpeedMultiplier(Math.max(0.25, speedMultiplier - 0.25))}
+                className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-white text-sm"
+              >
+                -
+              </button>
+              <input
+                type="range"
+                min="0.25"
+                max="2.0"
+                step="0.05"
+                value={speedMultiplier}
+                onChange={(e) => setSpeedMultiplier(parseFloat(e.target.value))}
+                className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-pink-500"
+              />
+              <button
+                onClick={() => setSpeedMultiplier(Math.min(2.0, speedMultiplier + 0.25))}
+                className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-white text-sm"
+              >
+                +
+              </button>
+              <button
+                onClick={() => setSpeedMultiplier(1.0)}
+                className="px-2 py-1 bg-gray-600 hover:bg-gray-500 rounded text-white text-xs"
+              >
+                Reset
+              </button>
+            </div>
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <span>0.25x</span>
+              <span>1.0x</span>
+              <span>2.0x</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Bottom info bar */}
-      {gameState === 'playing' && (
+      {gameState === 'playing' && !showSettings && (
         <div className="w-full max-w-lg flex items-center justify-between px-4 mt-2 text-xs text-gray-500">
           <span>Speed: {playerSpeed}</span>
-          <button
-            onClick={toggleTrailMode}
-            className={`px-3 py-1 rounded-full transition-colors ${
-              game.infiniteTrail
-                ? 'bg-pink-600/50 text-pink-200'
-                : 'bg-gray-800/50 text-gray-400'
-            }`}
-          >
-            {game.infiniteTrail ? 'Trail: ON' : 'Trail: OFF'}
-          </button>
+          <div className="flex items-center gap-2">
+            {speedMultiplier !== 1.0 && (
+              <span className="text-yellow-400">{speedMultiplier.toFixed(1)}x</span>
+            )}
+            {!gravityEnabled && (
+              <span className="text-cyan-400">No Gravity</span>
+            )}
+          </div>
         </div>
       )}
 
       <div className="mt-3 text-center text-gray-500 text-xs max-w-xs">
-        {gameState === 'playing' && (
+        {gameState === 'playing' && !showSettings && (
           <p>Tap and hold anywhere to hook onto nearby circles</p>
         )}
       </div>
