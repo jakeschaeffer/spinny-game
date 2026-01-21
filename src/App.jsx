@@ -1,91 +1,115 @@
 import * as React from 'react';
 const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
-// Safe audio helper that gracefully handles missing files
-const createSafeAudio = (src) => {
-  const audio = new Audio();
-  audio.src = src;
-  audio.preload = 'auto';
+// Web Audio API sound generator
+const createAudioContext = () => {
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  return new AudioContext();
+};
 
-  // Suppress errors for missing files
-  audio.onerror = () => {};
+let audioCtx = null;
 
-  const safePlay = () => {
-    const playPromise = audio.play();
-    if (playPromise !== undefined) {
-      playPromise.catch(() => {});
+const getAudioContext = () => {
+  if (!audioCtx) {
+    audioCtx = createAudioContext();
+  }
+  return audioCtx;
+};
+
+const playTone = (frequency, duration, type = 'sine', volume = 0.3) => {
+  try {
+    const ctx = getAudioContext();
+    if (ctx.state === 'suspended') {
+      ctx.resume();
     }
-  };
 
-  return { audio, safePlay };
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(frequency, ctx.currentTime);
+
+    gainNode.gain.setValueAtTime(volume, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + duration);
+  } catch (e) {
+    // Audio not supported
+  }
+};
+
+const sounds = {
+  hook: () => {
+    playTone(880, 0.1, 'sine', 0.2);
+    playTone(1100, 0.15, 'sine', 0.15);
+  },
+  launch: () => {
+    playTone(440, 0.1, 'triangle', 0.2);
+    playTone(660, 0.15, 'triangle', 0.15);
+  },
+  gameOver: () => {
+    playTone(300, 0.2, 'sawtooth', 0.2);
+    setTimeout(() => playTone(200, 0.3, 'sawtooth', 0.15), 150);
+  },
+  combo: (level) => {
+    const baseFreq = 600 + (level * 100);
+    playTone(baseFreq, 0.1, 'sine', 0.15);
+  }
 };
 
 const OneMoreLine = () => {
-  // Game state
-  const [gameState, setGameState] = useState('menu'); // 'menu', 'playing', 'paused', 'gameover'
+  // UI State (things that need to trigger re-renders)
+  const [gameState, setGameState] = useState('menu');
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(() => {
     const saved = localStorage.getItem('oneMoreLineHighScore');
     return saved ? parseInt(saved, 10) : 0;
   });
-  const [isHolding, setIsHolding] = useState(false);
-  const [cameraY, setCameraY] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showTutorial, setShowTutorial] = useState(true);
   const [combo, setCombo] = useState(0);
-  const [lastHookTime, setLastHookTime] = useState(0);
-
-  // Screen size for responsive design
   const [screenSize, setScreenSize] = useState({ width: 400, height: 600 });
   const [gameScale, setGameScale] = useState(1);
+  const [, forceRender] = useState(0);
 
-  // Refs
-  const gameSettings = useRef({ infiniteTrail: false, spinDirection: 1 });
+  // Settings state
+  const [showHookIndicator, setShowHookIndicator] = useState(true);
+  const [gravityEnabled, setGravityEnabled] = useState(true);
+  const [speedMultiplier, setSpeedMultiplier] = useState(1.0);
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Game state refs (mutable, don't trigger re-renders)
+  const gameRef = useRef({
+    playerPos: { x: 200, y: 500 },
+    playerVelocity: { x: 0, y: -4 },
+    cameraY: 0,
+    hookedNode: null,
+    hookAngle: 0,
+    hookDistance: 0,
+    isHolding: false,
+    gameNodes: [],
+    startGracePeriod: true,
+    spinDirection: 1,
+    infiniteTrail: false,
+    nearestHookableNode: null,
+    lastHookTime: 0,
+    combo: 0,
+  });
+
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const trailPoints = useRef([]);
   const gameLoopRef = useRef(null);
-  const lastFrameTime = useRef(Date.now());
+  const lastFrameTime = useRef(0);
+  const renderFrameRef = useRef(null);
 
-  // Audio refs with safe loading
-  const audioRefs = useRef({
-    hook: createSafeAudio('/sounds/hook.mp3'),
-    swing: createSafeAudio('/sounds/swing.mp3'),
-    launch: createSafeAudio('/sounds/launch.mp3'),
-    gameOver: createSafeAudio('/sounds/gameover.mp3'),
-    background: createSafeAudio('/sounds/background.mp3'),
-  });
-
-  // Set loop for swing and background
-  useEffect(() => {
-    audioRefs.current.swing.audio.loop = true;
-    audioRefs.current.background.audio.loop = true;
-  }, []);
-
-  // Base game dimensions (will be scaled)
   const baseGameBounds = useMemo(() => ({ width: 400, height: 600 }), []);
+  const gameBounds = baseGameBounds;
 
-  // Scaled game bounds
-  const gameBounds = useMemo(() => ({
-    width: baseGameBounds.width,
-    height: baseGameBounds.height,
-  }), [baseGameBounds]);
-
-  // Player state
-  const [playerPos, setPlayerPos] = useState({ x: 200, y: 500 });
-  const [playerVelocity, setPlayerVelocity] = useState({ x: 0, y: -4 });
-
-  // Hook state
-  const [hookedNode, setHookedNode] = useState(null);
-  const [hookAngle, setHookAngle] = useState(0);
-  const [hookDistance, setHookDistance] = useState(0);
-  const [nearestHookableNode, setNearestHookableNode] = useState(null);
-
-  // Nodes state
-  const [gameNodes, setGameNodes] = useState([]);
-  const [startGracePeriod, setStartGracePeriod] = useState(true);
-
-  // Color schemes for nodes
   const colorSchemes = useMemo(() => [
     { main: '#4ade80', light: '#86efac', dark: '#16a34a' },
     { main: '#38bdf8', light: '#7dd3fc', dark: '#0284c7' },
@@ -102,15 +126,11 @@ const OneMoreLine = () => {
     const updateSize = () => {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-
-      // Calculate scale to fit screen while maintaining aspect ratio
       const maxWidth = Math.min(vw - 32, 500);
-      const maxHeight = vh - 180; // Leave room for UI
-
+      const maxHeight = vh - 160;
       const scaleX = maxWidth / baseGameBounds.width;
       const scaleY = maxHeight / baseGameBounds.height;
-      const scale = Math.min(scaleX, scaleY, 1.2); // Cap at 1.2x
-
+      const scale = Math.min(scaleX, scaleY, 1.2);
       setGameScale(scale);
       setScreenSize({
         width: baseGameBounds.width * scale,
@@ -121,25 +141,22 @@ const OneMoreLine = () => {
     updateSize();
     window.addEventListener('resize', updateSize);
     window.addEventListener('orientationchange', updateSize);
-
     return () => {
       window.removeEventListener('resize', updateSize);
       window.removeEventListener('orientationchange', updateSize);
     };
   }, [baseGameBounds]);
 
-  // Prevent default touch behaviors (zoom, scroll)
+  // Prevent default touch behaviors
   useEffect(() => {
     const preventDefaults = (e) => {
       if (gameState === 'playing' || gameState === 'paused') {
         e.preventDefault();
       }
     };
-
     document.addEventListener('touchmove', preventDefaults, { passive: false });
     document.addEventListener('gesturestart', preventDefaults);
     document.addEventListener('gesturechange', preventDefaults);
-
     return () => {
       document.removeEventListener('touchmove', preventDefaults);
       document.removeEventListener('gesturestart', preventDefaults);
@@ -147,36 +164,11 @@ const OneMoreLine = () => {
     };
   }, [gameState]);
 
-  const playSound = useCallback((soundName) => {
-    if (soundEnabled && audioRefs.current[soundName]) {
-      audioRefs.current[soundName].safePlay();
+  const playSound = useCallback((soundName, ...args) => {
+    if (soundEnabled && sounds[soundName]) {
+      sounds[soundName](...args);
     }
   }, [soundEnabled]);
-
-  const stopSound = useCallback((soundName) => {
-    if (audioRefs.current[soundName]) {
-      audioRefs.current[soundName].audio.pause();
-      audioRefs.current[soundName].audio.currentTime = 0;
-    }
-  }, []);
-
-  const toggleTrailMode = useCallback(() => {
-    gameSettings.current.infiniteTrail = !gameSettings.current.infiniteTrail;
-    setGameState((prev) => prev === 'playing' ? 'playing' : prev);
-  }, []);
-
-  const toggleSound = useCallback(() => {
-    setSoundEnabled(prev => {
-      if (prev) {
-        // Turning off - stop all sounds
-        Object.values(audioRefs.current).forEach(({ audio }) => {
-          audio.pause();
-          audio.currentTime = 0;
-        });
-      }
-      return !prev;
-    });
-  }, []);
 
   const generateInitialNodes = useCallback(() => {
     const initialNodes = [];
@@ -184,15 +176,13 @@ const OneMoreLine = () => {
       const sizeFactor = 0.7 + Math.random() * 1.1;
       const baseRadius = 18;
       const colorScheme = colorSchemes[Math.floor(Math.random() * colorSchemes.length)];
-      const brightnessOffset = Math.random() * 10;
-
       initialNodes.push({
         id: i + 1,
         x: 60 + Math.random() * (gameBounds.width - 120),
         y: 500 - i * 90,
         radius: Math.round(baseRadius * sizeFactor),
         colorScheme,
-        brightnessOffset,
+        brightnessOffset: Math.random() * 10,
         patternType: Math.floor(Math.random() * 3),
       });
     }
@@ -211,8 +201,6 @@ const OneMoreLine = () => {
         const sizeFactor = 0.7 + Math.random() * 1.1;
         const baseRadius = 18;
         const colorScheme = colorSchemes[Math.floor(Math.random() * colorSchemes.length)];
-        const brightnessOffset = Math.random() * 10;
-
         const nodeY = generationTop - i * 90 - Math.random() * 40;
         newNodes.push({
           id: Date.now() + i + Math.random(),
@@ -220,7 +208,7 @@ const OneMoreLine = () => {
           y: nodeY,
           radius: Math.round(baseRadius * sizeFactor),
           colorScheme,
-          brightnessOffset,
+          brightnessOffset: Math.random() * 10,
           patternType: Math.floor(Math.random() * 3),
         });
       }
@@ -237,6 +225,7 @@ const OneMoreLine = () => {
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
+    const game = gameRef.current;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (trailPoints.current.length >= 2) {
@@ -245,21 +234,19 @@ const OneMoreLine = () => {
       gradient.addColorStop(0.5, '#a855f7');
       gradient.addColorStop(1, '#6366f1');
 
-      const visibleYMin = cameraY - 100;
-      const visibleYMax = cameraY + canvas.height + 100;
-      const visiblePoints = gameSettings.current.infiniteTrail
+      const visibleYMin = game.cameraY - 100;
+      const visibleYMax = game.cameraY + canvas.height + 100;
+      const visiblePoints = game.infiniteTrail
         ? trailPoints.current.filter((pt) => pt.y >= visibleYMin && pt.y <= visibleYMax)
         : trailPoints.current;
 
       if (visiblePoints.length < 2) return;
 
       ctx.beginPath();
-      const startPoint = visiblePoints[0];
-      ctx.moveTo(startPoint.x, startPoint.y - cameraY);
+      ctx.moveTo(visiblePoints[0].x, visiblePoints[0].y - game.cameraY);
 
       for (let i = 1; i < visiblePoints.length; i++) {
-        const point = visiblePoints[i];
-        ctx.lineTo(point.x, point.y - cameraY);
+        ctx.lineTo(visiblePoints[i].x, visiblePoints[i].y - game.cameraY);
       }
 
       ctx.strokeStyle = gradient;
@@ -275,77 +262,66 @@ const OneMoreLine = () => {
       ctx.stroke();
       ctx.shadowBlur = 0;
     }
-  }, [cameraY]);
-
-  const addTrailPoint = useCallback((x, y) => {
-    trailPoints.current.push({ x, y });
-    if (!gameSettings.current.infiniteTrail && trailPoints.current.length > 40) {
-      trailPoints.current = trailPoints.current.slice(-40);
-    }
-    drawTrail();
-  }, [drawTrail]);
+  }, []);
 
   const startGame = useCallback(() => {
+    const game = gameRef.current;
+    game.playerPos = { x: 200, y: 500 };
+    game.playerVelocity = { x: 0, y: -4 };
+    game.cameraY = 0;
+    game.hookedNode = null;
+    game.hookAngle = 0;
+    game.hookDistance = 0;
+    game.isHolding = false;
+    game.startGracePeriod = true;
+    game.combo = 0;
+    game.lastHookTime = 0;
+    trailPoints.current = [];
+
+    const initialNodes = generateInitialNodes();
+    game.gameNodes = initialNodes.filter((node) => {
+      const dx = node.x - 200;
+      const dy = node.y - 500;
+      return Math.sqrt(dx * dx + dy * dy) > 60;
+    });
+
     setGameState('playing');
     setScore(0);
-    setCameraY(0);
-    setPlayerPos({ x: 200, y: 500 });
-    setPlayerVelocity({ x: 0, y: -4 });
-    trailPoints.current = [];
-    setHookedNode(null);
-    setIsHolding(false);
     setCombo(0);
     setShowTutorial(true);
 
-    const initialNodes = generateInitialNodes();
-    const safeNodes = initialNodes.filter((node) => {
-      const dx = node.x - 200;
-      const dy = node.y - 500;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      return distance > 60;
-    });
-
-    setGameNodes(safeNodes);
-    setStartGracePeriod(true);
     setTimeout(() => {
-      setStartGracePeriod(false);
+      game.startGracePeriod = false;
       setShowTutorial(false);
     }, 2000);
 
-    playSound('background');
-  }, [generateInitialNodes, playSound]);
+    // Initialize audio context on user interaction
+    getAudioContext();
+  }, [generateInitialNodes]);
 
   const pauseGame = useCallback(() => {
     if (gameState === 'playing') {
       setGameState('paused');
-      stopSound('swing');
-      audioRefs.current.background.audio.pause();
     } else if (gameState === 'paused') {
       setGameState('playing');
-      if (soundEnabled) {
-        audioRefs.current.background.safePlay();
-      }
     }
-  }, [gameState, soundEnabled, stopSound]);
+  }, [gameState]);
 
-  const endGame = useCallback(() => {
+  const endGame = useCallback((currentScore) => {
     setGameState('gameover');
-    stopSound('swing');
-    stopSound('background');
     playSound('gameOver');
 
-    // Update high score
-    if (score > highScore) {
-      setHighScore(score);
-      localStorage.setItem('oneMoreLineHighScore', score.toString());
+    if (currentScore > highScore) {
+      setHighScore(currentScore);
+      localStorage.setItem('oneMoreLineHighScore', currentScore.toString());
     }
-  }, [score, highScore, playSound, stopSound]);
+  }, [highScore, playSound]);
 
-  const findClosestHookableNode = useCallback((pos) => {
+  const findClosestHookableNode = useCallback((pos, nodes) => {
     let closestNode = null;
     let closestDistance = Infinity;
 
-    for (const node of gameNodes) {
+    for (const node of nodes) {
       const dx = node.x - pos.x;
       const dy = node.y - pos.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
@@ -356,22 +332,10 @@ const OneMoreLine = () => {
         closestDistance = distance;
       }
     }
-
     return closestNode;
-  }, [gameNodes]);
-
-  // Update nearest hookable node for visual feedback
-  useEffect(() => {
-    if (gameState === 'playing' && !hookedNode) {
-      const nearest = findClosestHookableNode(playerPos);
-      setNearestHookableNode(nearest?.node || null);
-    } else {
-      setNearestHookableNode(null);
-    }
-  }, [playerPos, gameState, hookedNode, findClosestHookableNode]);
+  }, []);
 
   const handleHoldStart = useCallback((e) => {
-    // Prevent default touch behaviors
     if (e) {
       e.preventDefault();
       e.stopPropagation();
@@ -387,36 +351,37 @@ const OneMoreLine = () => {
       return;
     }
 
-    setIsHolding(true);
+    const game = gameRef.current;
+    game.isHolding = true;
 
-    if (!hookedNode && gameState === 'playing') {
-      const closestNode = findClosestHookableNode(playerPos);
+    if (!game.hookedNode && gameState === 'playing') {
+      const closestNode = findClosestHookableNode(game.playerPos, game.gameNodes);
 
       if (closestNode) {
-        setHookedNode(closestNode.node);
+        game.hookedNode = closestNode.node;
         playSound('hook');
-        playSound('swing');
 
-        const dx = playerPos.x - closestNode.node.x;
-        const dy = playerPos.y - closestNode.node.y;
-        const initialAngle = Math.atan2(dy, dx);
-        setHookAngle(initialAngle);
-        setHookDistance(closestNode.distance);
+        const dx = game.playerPos.x - closestNode.node.x;
+        const dy = game.playerPos.y - closestNode.node.y;
+        game.hookAngle = Math.atan2(dy, dx);
+        game.hookDistance = closestNode.distance;
 
-        const crossProduct = dx * playerVelocity.y - dy * playerVelocity.x;
-        gameSettings.current.spinDirection = Math.sign(crossProduct) || 1;
+        const crossProduct = dx * game.playerVelocity.y - dy * game.playerVelocity.x;
+        game.spinDirection = Math.sign(crossProduct) || 1;
 
         // Combo system
         const now = Date.now();
-        if (now - lastHookTime < 2000) {
-          setCombo(prev => prev + 1);
+        if (now - game.lastHookTime < 2000) {
+          game.combo++;
+          playSound('combo', game.combo);
         } else {
-          setCombo(1);
+          game.combo = 1;
         }
-        setLastHookTime(now);
+        game.lastHookTime = now;
+        setCombo(game.combo);
       }
     }
-  }, [gameState, hookedNode, playerPos, playerVelocity, findClosestHookableNode, playSound, startGame, pauseGame, lastHookTime]);
+  }, [gameState, findClosestHookableNode, playSound, startGame, pauseGame]);
 
   const handleHoldEnd = useCallback((e) => {
     if (e) {
@@ -424,26 +389,26 @@ const OneMoreLine = () => {
       e.stopPropagation();
     }
 
-    setIsHolding(false);
+    const game = gameRef.current;
+    game.isHolding = false;
 
-    if (hookedNode && gameState === 'playing') {
+    if (game.hookedNode && gameState === 'playing') {
       playSound('launch');
-      stopSound('swing');
 
-      const tangentOffset = gameSettings.current.spinDirection * Math.PI / 2;
-      const angle = hookAngle + tangentOffset;
+      const tangentOffset = game.spinDirection * Math.PI / 2;
+      const angle = game.hookAngle + tangentOffset;
       const baseSpeed = 5.5;
-      const comboBonus = Math.min(combo * 0.15, 1.5);
+      const comboBonus = Math.min(game.combo * 0.1, 1.0);
       const speed = baseSpeed + comboBonus;
 
-      setPlayerVelocity({
+      game.playerVelocity = {
         x: Math.cos(angle) * speed,
         y: Math.sin(angle) * speed,
-      });
+      };
 
-      setHookedNode(null);
+      game.hookedNode = null;
     }
-  }, [hookedNode, hookAngle, gameState, combo, playSound, stopSound]);
+  }, [gameState, playSound]);
 
   // Keyboard controls
   useEffect(() => {
@@ -471,114 +436,127 @@ const OneMoreLine = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
-
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
   }, [handleHoldStart, handleHoldEnd, pauseGame, startGame, gameState]);
 
-  // Main game loop with delta time for consistent physics
+  // Main game loop - runs physics at fixed timestep
   useEffect(() => {
     if (gameState !== 'playing') {
       if (gameLoopRef.current) {
         cancelAnimationFrame(gameLoopRef.current);
+        gameLoopRef.current = null;
       }
       return;
     }
 
-    const gameLoop = () => {
-      const now = Date.now();
-      const deltaTime = Math.min((now - lastFrameTime.current) / 16.67, 2); // Cap delta to prevent huge jumps
-      lastFrameTime.current = now;
+    const game = gameRef.current;
+    lastFrameTime.current = performance.now();
 
-      setPlayerPos((prevPos) => {
-        let newX, newY;
+    const gameLoop = (currentTime) => {
+      const deltaMs = currentTime - lastFrameTime.current;
+      lastFrameTime.current = currentTime;
 
-        if (hookedNode && isHolding) {
-          const distanceFactor = Math.max(0.5, Math.min(1.5, hookDistance / 100));
-          const spinSpeed = 0.055 / distanceFactor;
-          const oscillation = Math.sin(now * 0.003) * 0.006;
-          const finalSpinSpeed = (spinSpeed + oscillation) * gameSettings.current.spinDirection * deltaTime;
+      // Cap delta to prevent huge jumps (e.g., after tab switch)
+      const delta = Math.min(deltaMs / 16.67, 3);
 
-          const newAngle = hookAngle + finalSpinSpeed;
-          setHookAngle(newAngle);
+      let newX, newY;
 
-          newX = hookedNode.x + Math.cos(newAngle) * hookDistance;
-          newY = hookedNode.y + Math.sin(newAngle) * hookDistance;
-        } else {
-          // Apply slight gravity when not hooked
-          const gravity = 0.02 * deltaTime;
-          setPlayerVelocity(prev => ({
-            x: prev.x,
-            y: prev.y + gravity
-          }));
+      if (game.hookedNode && game.isHolding) {
+        // Swinging around node
+        const distanceFactor = Math.max(0.5, Math.min(1.5, game.hookDistance / 100));
+        const spinSpeed = 0.055 / distanceFactor;
+        const finalSpinSpeed = spinSpeed * game.spinDirection * delta * speedMultiplier;
 
-          newX = prevPos.x + playerVelocity.x * deltaTime;
-          newY = prevPos.y + playerVelocity.y * deltaTime;
+        game.hookAngle += finalSpinSpeed;
+        newX = game.hookedNode.x + Math.cos(game.hookAngle) * game.hookDistance;
+        newY = game.hookedNode.y + Math.sin(game.hookAngle) * game.hookDistance;
+      } else {
+        // Free flight with optional gravity
+        if (gravityEnabled) {
+          game.playerVelocity.y += 0.015 * delta;
         }
+        newX = game.playerPos.x + game.playerVelocity.x * delta * speedMultiplier;
+        newY = game.playerPos.y + game.playerVelocity.y * delta * speedMultiplier;
+      }
 
-        // Collision detection
-        if (!startGracePeriod) {
-          for (const node of gameNodes) {
-            if (hookedNode && node.id === hookedNode.id) continue;
+      // Collision detection
+      let collision = false;
+      if (!game.startGracePeriod) {
+        for (const node of game.gameNodes) {
+          if (game.hookedNode && node.id === game.hookedNode.id) continue;
 
-            const dx = newX - node.x;
-            const dy = newY - node.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            const collisionDistance = node.radius + 6;
+          const dx = newX - node.x;
+          const dy = newY - node.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
 
-            if (distance < collisionDistance) {
-              endGame();
-              return prevPos;
-            }
+          if (distance < node.radius + 6) {
+            collision = true;
+            break;
           }
         }
 
         // Wall collision
-        if (!hookedNode && (newX < 12 || newX > gameBounds.width - 12)) {
-          endGame();
-          return prevPos;
+        if (!game.hookedNode && (newX < 12 || newX > gameBounds.width - 12)) {
+          collision = true;
         }
 
         // Bottom boundary
-        if (newY > cameraY + gameBounds.height + 80) {
-          endGame();
-          return prevPos;
+        if (newY > game.cameraY + gameBounds.height + 80) {
+          collision = true;
         }
+      }
 
-        addTrailPoint(newX, newY);
-        return { x: newX, y: newY };
-      });
+      if (collision) {
+        const currentScore = Math.max(0, Math.floor(-game.cameraY / 8));
+        endGame(currentScore);
+        return;
+      }
 
-      // Camera follow
-      setCameraY((prevCameraY) => {
-        const targetY = playerPos.y - gameBounds.height / 2.5;
-        const smoothing = 0.08;
-        return prevCameraY + (targetY - prevCameraY) * smoothing * deltaTime;
-      });
+      // Update position
+      game.playerPos.x = newX;
+      game.playerPos.y = newY;
+
+      // Add trail point
+      trailPoints.current.push({ x: newX, y: newY });
+      if (!game.infiniteTrail && trailPoints.current.length > 50) {
+        trailPoints.current = trailPoints.current.slice(-50);
+      }
+
+      // Camera follow (smooth)
+      const targetY = game.playerPos.y - gameBounds.height / 2.5;
+      game.cameraY += (targetY - game.cameraY) * 0.1 * delta;
 
       // Generate new nodes
-      setGameNodes((prevNodes) => generateNewNodes(prevNodes, cameraY));
+      game.gameNodes = generateNewNodes(game.gameNodes, game.cameraY);
+
+      // Find nearest hookable node
+      game.nearestHookableNode = findClosestHookableNode(game.playerPos, game.gameNodes)?.node || null;
 
       // Update score
-      const baseY = 0;
-      const climbHeight = baseY - cameraY;
-      const heightScore = Math.max(0, Math.floor(climbHeight / 8));
-      setScore(heightScore);
+      const newScore = Math.max(0, Math.floor(-game.cameraY / 8));
+      setScore(newScore);
+
+      // Draw trail on canvas
+      drawTrail();
+
+      // Trigger render for visual updates
+      forceRender(n => n + 1);
 
       gameLoopRef.current = requestAnimationFrame(gameLoop);
     };
 
-    lastFrameTime.current = Date.now();
     gameLoopRef.current = requestAnimationFrame(gameLoop);
 
     return () => {
       if (gameLoopRef.current) {
         cancelAnimationFrame(gameLoopRef.current);
+        gameLoopRef.current = null;
       }
     };
-  }, [playerPos, playerVelocity, hookedNode, hookAngle, hookDistance, isHolding, gameState, cameraY, startGracePeriod, gameNodes, gameBounds, generateNewNodes, addTrailPoint, endGame]);
+  }, [gameState, gameBounds, generateNewNodes, findClosestHookableNode, endGame, drawTrail, gravityEnabled, speedMultiplier]);
 
   // Canvas setup
   useEffect(() => {
@@ -586,14 +564,21 @@ const OneMoreLine = () => {
     if (canvas) {
       canvas.width = gameBounds.width;
       canvas.height = gameBounds.height;
-      drawTrail();
     }
-  }, [cameraY, gameBounds, drawTrail]);
+  }, [gameBounds]);
 
-  // Calculate player speed for display
-  const playerSpeed = useMemo(() => {
-    return Math.sqrt(playerVelocity.x ** 2 + playerVelocity.y ** 2).toFixed(1);
-  }, [playerVelocity]);
+  const toggleTrailMode = useCallback(() => {
+    gameRef.current.infiniteTrail = !gameRef.current.infiniteTrail;
+    forceRender(n => n + 1);
+  }, []);
+
+  const toggleSound = useCallback(() => {
+    setSoundEnabled(prev => !prev);
+  }, []);
+
+  // Get current game state for rendering
+  const game = gameRef.current;
+  const playerSpeed = Math.sqrt(game.playerVelocity.x ** 2 + game.playerVelocity.y ** 2).toFixed(1);
 
   return (
     <div
@@ -606,7 +591,6 @@ const OneMoreLine = () => {
           ONE MORE LINE
         </div>
         <div className="flex items-center gap-2">
-          {/* Sound toggle */}
           <button
             onClick={toggleSound}
             className="p-2 rounded-full bg-gray-800/50 hover:bg-gray-700/50 transition-colors"
@@ -624,7 +608,6 @@ const OneMoreLine = () => {
             )}
           </button>
 
-          {/* Pause button */}
           {(gameState === 'playing' || gameState === 'paused') && (
             <button
               onClick={pauseGame}
@@ -642,6 +625,18 @@ const OneMoreLine = () => {
               )}
             </button>
           )}
+
+          {/* Settings button */}
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className={`p-2 rounded-full transition-colors ${showSettings ? 'bg-pink-600/50 text-pink-200' : 'bg-gray-800/50 hover:bg-gray-700/50 text-white'}`}
+            aria-label="Settings"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -678,7 +673,6 @@ const OneMoreLine = () => {
         onTouchEnd={handleHoldEnd}
         onTouchCancel={handleHoldEnd}
       >
-        {/* Scale wrapper */}
         <div
           style={{
             transform: `scale(${gameScale})`,
@@ -692,10 +686,10 @@ const OneMoreLine = () => {
           <div className="absolute top-0 right-0 w-2 h-full bg-gradient-to-b from-pink-500 to-indigo-500 opacity-80" style={{ zIndex: 9 }} />
 
           {/* Trail canvas */}
-          <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full" style={{ zIndex: 8, pointerEvents: 'none' }} />
+          <canvas ref={canvasRef} className="absolute top-0 left-0" style={{ zIndex: 8, pointerEvents: 'none', width: gameBounds.width, height: gameBounds.height }} />
 
           {/* Game world */}
-          <div className="absolute left-0 w-full" style={{ transform: `translateY(${-cameraY}px)` }}>
+          <div className="absolute left-0 w-full" style={{ transform: `translateY(${-game.cameraY}px)` }}>
             {/* Height markers */}
             {[...Array(100)].map((_, i) => (
               i > 5 && (
@@ -706,16 +700,15 @@ const OneMoreLine = () => {
             ))}
 
             {/* Nodes */}
-            {gameNodes.map((node) => {
-              const isNearestHookable = nearestHookableNode?.id === node.id;
+            {game.gameNodes.map((node) => {
+              const isNearestHookable = game.nearestHookableNode?.id === node.id;
               const hookRadius = 180 * (node.radius / 16);
 
               return (
                 <React.Fragment key={node.id}>
-                  {/* Hook radius indicator (shows when player can hook) */}
-                  {isNearestHookable && !hookedNode && (
+                  {showHookIndicator && isNearestHookable && !game.hookedNode && (
                     <div
-                      className="absolute rounded-full animate-pulse"
+                      className="absolute rounded-full"
                       style={{
                         left: node.x - hookRadius,
                         top: node.y - hookRadius,
@@ -724,13 +717,13 @@ const OneMoreLine = () => {
                         border: `2px dashed ${node.colorScheme.light}`,
                         opacity: 0.4,
                         zIndex: 3,
+                        animation: 'pulse 1s infinite',
                       }}
                     />
                   )}
 
-                  {/* Node */}
                   <div
-                    className="absolute rounded-full transition-transform duration-100"
+                    className="absolute rounded-full"
                     style={{
                       left: node.x - node.radius,
                       top: node.y - node.radius,
@@ -746,6 +739,7 @@ const OneMoreLine = () => {
                           : `repeating-linear-gradient(45deg, ${node.colorScheme.main}, ${node.colorScheme.main} 4px, ${node.colorScheme.light} 4px, ${node.colorScheme.light} 8px)`,
                       filter: `brightness(${1 + node.brightnessOffset / 100})`,
                       transform: isNearestHookable ? 'scale(1.1)' : 'scale(1)',
+                      transition: 'transform 0.15s ease-out',
                     }}
                   />
                 </React.Fragment>
@@ -753,15 +747,15 @@ const OneMoreLine = () => {
             })}
 
             {/* Hook line */}
-            {hookedNode && isHolding && (
+            {game.hookedNode && game.isHolding && (
               <div
                 className="absolute bg-gradient-to-r from-white to-pink-300"
                 style={{
-                  left: hookedNode.x,
-                  top: hookedNode.y,
-                  width: `${hookDistance}px`,
+                  left: game.hookedNode.x,
+                  top: game.hookedNode.y,
+                  width: `${game.hookDistance}px`,
                   height: '2px',
-                  transform: `rotate(${hookAngle * (180 / Math.PI)}deg)`,
+                  transform: `rotate(${game.hookAngle * (180 / Math.PI)}deg)`,
                   transformOrigin: '0 0',
                   boxShadow: '0 0 8px rgba(255,255,255,0.5)',
                   zIndex: 9,
@@ -773,14 +767,13 @@ const OneMoreLine = () => {
             <div
               className="absolute rounded-full"
               style={{
-                left: playerPos.x - 10,
-                top: playerPos.y - 10,
+                left: game.playerPos.x - 10,
+                top: game.playerPos.y - 10,
                 width: 20,
                 height: 20,
                 background: 'radial-gradient(circle at 35% 35%, #fbbf24 0%, #f97316 50%, #ea580c 100%)',
-                boxShadow: `0 0 ${isHolding ? 24 : 16}px ${isHolding ? '#fbbf24' : '#f97316'}, 0 0 ${isHolding ? 40 : 28}px rgba(249, 115, 22, 0.5)`,
+                boxShadow: `0 0 ${game.isHolding ? 24 : 16}px ${game.isHolding ? '#fbbf24' : '#f97316'}, 0 0 ${game.isHolding ? 40 : 28}px rgba(249, 115, 22, 0.5)`,
                 zIndex: 10,
-                transition: 'box-shadow 0.1s ease',
               }}
             />
           </div>
@@ -788,7 +781,7 @@ const OneMoreLine = () => {
           {/* Tutorial overlay */}
           {showTutorial && gameState === 'playing' && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 20 }}>
-              <div className="bg-black/60 px-6 py-4 rounded-xl text-center animate-pulse">
+              <div className="bg-black/60 px-6 py-4 rounded-xl text-center">
                 <p className="text-white text-lg font-medium">HOLD to hook</p>
                 <p className="text-indigo-300 text-sm mt-1">RELEASE to launch</p>
               </div>
@@ -875,26 +868,111 @@ const OneMoreLine = () => {
         </div>
       </div>
 
-      {/* Bottom info bar */}
-      {gameState === 'playing' && (
-        <div className="w-full max-w-lg flex items-center justify-between px-4 mt-2 text-xs text-gray-500">
-          <span>Speed: {playerSpeed}</span>
-          <button
-            onClick={toggleTrailMode}
-            className={`px-3 py-1 rounded-full transition-colors ${
-              gameSettings.current.infiniteTrail
-                ? 'bg-pink-600/50 text-pink-200'
-                : 'bg-gray-800/50 text-gray-400'
-            }`}
-          >
-            {gameSettings.current.infiniteTrail ? 'Trail: ON' : 'Trail: OFF'}
-          </button>
+      {/* Settings Panel */}
+      {showSettings && (
+        <div className="w-full max-w-lg mt-3 p-4 bg-gray-800/80 rounded-xl backdrop-blur-sm">
+          <div className="text-sm font-semibold text-white mb-3">Game Settings</div>
+
+          {/* Toggle Row */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {/* Hook Indicator Toggle */}
+            <button
+              onClick={() => setShowHookIndicator(!showHookIndicator)}
+              className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                showHookIndicator
+                  ? 'bg-pink-600 text-white'
+                  : 'bg-gray-700 text-gray-400'
+              }`}
+            >
+              Hook Indicator: {showHookIndicator ? 'ON' : 'OFF'}
+            </button>
+
+            {/* Gravity Toggle */}
+            <button
+              onClick={() => setGravityEnabled(!gravityEnabled)}
+              className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                gravityEnabled
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-700 text-gray-400'
+              }`}
+            >
+              Gravity: {gravityEnabled ? 'ON' : 'OFF'}
+            </button>
+
+            {/* Trail Toggle */}
+            <button
+              onClick={toggleTrailMode}
+              className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                game.infiniteTrail
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gray-700 text-gray-400'
+              }`}
+            >
+              Infinite Trail: {game.infiniteTrail ? 'ON' : 'OFF'}
+            </button>
+          </div>
+
+          {/* Speed Slider */}
+          <div className="mb-2">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-gray-400">Game Speed</span>
+              <span className="text-xs font-mono text-white">{speedMultiplier.toFixed(2)}x</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSpeedMultiplier(Math.max(0.25, speedMultiplier - 0.25))}
+                className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-white text-sm"
+              >
+                -
+              </button>
+              <input
+                type="range"
+                min="0.25"
+                max="2.0"
+                step="0.05"
+                value={speedMultiplier}
+                onChange={(e) => setSpeedMultiplier(parseFloat(e.target.value))}
+                className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-pink-500"
+              />
+              <button
+                onClick={() => setSpeedMultiplier(Math.min(2.0, speedMultiplier + 0.25))}
+                className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-white text-sm"
+              >
+                +
+              </button>
+              <button
+                onClick={() => setSpeedMultiplier(1.0)}
+                className="px-2 py-1 bg-gray-600 hover:bg-gray-500 rounded text-white text-xs"
+              >
+                Reset
+              </button>
+            </div>
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <span>0.25x</span>
+              <span>1.0x</span>
+              <span>2.0x</span>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Mobile-friendly instructions */}
+      {/* Bottom info bar */}
+      {gameState === 'playing' && !showSettings && (
+        <div className="w-full max-w-lg flex items-center justify-between px-4 mt-2 text-xs text-gray-500">
+          <span>Speed: {playerSpeed}</span>
+          <div className="flex items-center gap-2">
+            {speedMultiplier !== 1.0 && (
+              <span className="text-yellow-400">{speedMultiplier.toFixed(1)}x</span>
+            )}
+            {!gravityEnabled && (
+              <span className="text-cyan-400">No Gravity</span>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="mt-3 text-center text-gray-500 text-xs max-w-xs">
-        {gameState === 'playing' && (
+        {gameState === 'playing' && !showSettings && (
           <p>Tap and hold anywhere to hook onto nearby circles</p>
         )}
       </div>
