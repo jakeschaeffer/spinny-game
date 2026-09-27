@@ -48,6 +48,23 @@ struct Physics: Codable, Equatable {
     var launchPower: CGFloat = 1
     /// Multiplier on gravity; 0 turns it off.
     var gravity: CGFloat = 1
+    /// Real seconds you get to grab a planet again after letting go while your swing is out of
+    /// bounds, before it counts as a crash. 0 means an out-of-bounds release crashes immediately.
+    var regrabWindow: TimeInterval = 0.1
+}
+
+extension Physics {
+    /// Tolerates settings saved by older versions: any value missing from the data keeps its default.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let defaults = Physics()
+        self.init(
+            spin: try container.decodeIfPresent(CGFloat.self, forKey: .spin) ?? defaults.spin,
+            tetherEffect: try container.decodeIfPresent(CGFloat.self, forKey: .tetherEffect) ?? defaults.tetherEffect,
+            launchPower: try container.decodeIfPresent(CGFloat.self, forKey: .launchPower) ?? defaults.launchPower,
+            gravity: try container.decodeIfPresent(CGFloat.self, forKey: .gravity) ?? defaults.gravity,
+            regrabWindow: try container.decodeIfPresent(TimeInterval.self, forKey: .regrabWindow) ?? defaults.regrabWindow)
+    }
 }
 
 enum WorldEvent: Equatable {
@@ -97,6 +114,9 @@ struct GameWorld {
     var viewHeight: CGFloat
     var physics: Physics
     var spawnsPlanets = true
+    /// How fast world time runs relative to real time (the game speed setting). Only used to keep the
+    /// regrab window in real time.
+    var timeScale: Double = 1
 
     private(set) var player: CGPoint
     private(set) var velocity: CGVector
@@ -114,6 +134,8 @@ struct GameWorld {
     private(set) var lastHookTime: TimeInterval = -.infinity
     private(set) var maxAltitude: CGFloat = 0
     private(set) var deathCause: DeathCause?
+    /// Real seconds left to grab again after an out-of-bounds release; bounds are forgiven meanwhile.
+    private(set) var regrabRemaining: TimeInterval?
 
     private var rng: SplitMix64
     private var nextRowY: CGFloat = 90
@@ -184,6 +206,7 @@ struct GameWorld {
         let dx = player.x - target.position.x
         let dy = player.y - target.position.y
         hookedID = target.id
+        regrabRemaining = nil
         hookAngle = atan2(dy, dx)
         hookDistance = hypot(dx, dy)
         // Keep spinning the way the player was already travelling around the planet.
@@ -204,6 +227,11 @@ struct GameWorld {
             return []
         }
         hookedID = nil
+        // Letting go past a wall (or below the screen) isn't fatal straight away: there's a short
+        // window to grab again.
+        if boundsViolation() != nil, physics.regrabWindow > 0 {
+            regrabRemaining = physics.regrabWindow
+        }
         // Fling: carry the swing's speed off the planet, never slower than a standard launch and
         // capped so a huge orbit can't fire you across the screen.
         let orbitalSpeed = spinRate(tether: hookDistance) * hookDistance
@@ -233,6 +261,10 @@ struct GameWorld {
             velocity.dy -= Tuning.gravity * physics.gravity * h
             player = CGPoint(x: player.x + velocity.dx * h, y: player.y + velocity.dy * h)
         }
+        if let remaining = regrabRemaining {
+            let left = remaining - dt / max(timeScale, 0.01)
+            regrabRemaining = left > 0 ? left : nil
+        }
 
         if let cause = collision() {
             deathCause = cause
@@ -256,7 +288,11 @@ struct GameWorld {
             }
         }
         // While orbiting you're tethered: the swing may cross the walls or dip off-screen safely.
-        guard !isOrbiting else { return nil }
+        guard !isOrbiting, regrabRemaining == nil else { return nil }
+        return boundsViolation()
+    }
+
+    private func boundsViolation() -> DeathCause? {
         if player.x < Tuning.wallInset || player.x > Tuning.width - Tuning.wallInset { return .wall }
         if player.y < cameraBottom - Tuning.fallMargin { return .fell }
         return nil

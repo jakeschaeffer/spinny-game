@@ -9,7 +9,7 @@ A Swift rewrite of the game (SpriteKit for gameplay, SwiftUI for menus) with a d
 - Open `ios/OneMoreLine.xcodeproj` in Xcode, pick your iPhone or a simulator, and press Run.
 - Tests: `xcodebuild test -project ios/OneMoreLine.xcodeproj -scheme OneMoreLine -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max'`
 - Debug builds accept a `-autopilot` launch argument that plays runs automatically, handy for checking visuals.
-- Physics (spin speed, tether effect, launch power, gravity, game speed) can be tuned in the app's Settings.
+- Physics (spin speed, tether effect, launch power, gravity, out-of-bounds regrab window, game speed) can be tuned in the app's Settings.
 
 ## Web version
 

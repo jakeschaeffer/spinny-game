@@ -30,6 +30,9 @@ struct SettingsView: View {
                     SliderRow(title: "Gravity", systemImage: "arrow.down.circle",
                               value: $model.physics.gravity, range: 0...2, step: 0.1,
                               format: { $0 == 0 ? "Off" : multiplier($0) })
+                    SliderRow(title: "Regrab window", systemImage: "hand.raised.fingers.spread",
+                              value: $model.physics.regrabWindow, range: 0...0.3, step: 0.01,
+                              format: { $0 == 0 ? "Off" : "\(Int(($0 * 1000).rounded())) ms" })
                     SliderRow(title: "Game speed", systemImage: "gauge.with.dots.needle.50percent",
                               value: $model.gameSpeed, range: 0.5...2, step: 0.05, format: multiplier)
                     if model.physics != Physics() || model.gameSpeed != 1 {
@@ -41,7 +44,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Physics")
                 } footer: {
-                    Text("Tether effect sets how much tether length matters: higher makes short tethers whip around faster and long ones swing slower. Big, fast swings fling you off harder. Changes apply straight away, even mid-run.")
+                    Text("Tether effect sets how much tether length matters: higher makes short tethers whip around faster and long ones swing slower. Big, fast swings fling you off harder. Regrab window is how long you have to grab again if you let go while your swing is past a wall. Changes apply straight away, even mid-run.")
                 }
 
                 Section {

@@ -89,6 +89,51 @@ final class GameWorldTests: XCTestCase {
         XCTAssertEqual(run(&world, seconds: 0.5), [.died(.wall)])
     }
 
+    /// Orbit a planet near the left wall until the comet is past it (x < 0), then let go.
+    private func releasedPastTheWall(regrabWindow: TimeInterval, timeScale: Double = 1) -> GameWorld {
+        var physics = Physics(gravity: 0)
+        physics.regrabWindow = regrabWindow
+        var world = GameWorld(viewHeight: viewHeight, player: CGPoint(x: 100, y: 0), velocity: CGVector(dx: 0, dy: 240),
+                              planets: [planet(1, x: 40, y: 0, radius: 15)], physics: physics)
+        world.timeScale = timeScale
+        _ = world.press()
+        while world.player.x > 0 { XCTAssertEqual(world.step(step), []) }
+        _ = world.release()
+        return world
+    }
+
+    func testGrabbingAgainInsideTheRegrabWindowSavesAnOutOfBoundsRelease() {
+        var world = releasedPastTheWall(regrabWindow: 0.1)
+        XCTAssertEqual(run(&world, seconds: 0.08), [], "still inside the window")
+        XCTAssertEqual(world.press(), [.hooked(planetID: 1, combo: 2)])
+        XCTAssertEqual(run(&world, seconds: 1), [], "back on the tether, the swing is safe again")
+    }
+
+    func testOutOfBoundsReleaseCrashesWhenTheRegrabWindowCloses() {
+        var world = releasedPastTheWall(regrabWindow: 0.1)
+        XCTAssertEqual(run(&world, seconds: 0.09), [])
+        XCTAssertEqual(run(&world, seconds: 0.05), [.died(.wall)])
+    }
+
+    func testRegrabWindowIsRealTimeAtAnyGameSpeed() {
+        // At double game speed, 0.1 real seconds is 0.2 seconds of world time.
+        var world = releasedPastTheWall(regrabWindow: 0.1, timeScale: 2)
+        XCTAssertEqual(run(&world, seconds: 0.18), [])
+        XCTAssertEqual(run(&world, seconds: 0.05), [.died(.wall)])
+    }
+
+    func testRegrabWindowOffMeansAnImmediateCrash() {
+        var world = releasedPastTheWall(regrabWindow: 0)
+        XCTAssertEqual(world.step(step), [.died(.wall)])
+    }
+
+    func testSettingsSavedBeforeTheRegrabWindowExistedStillLoad() throws {
+        let old = Data(#"{"spin":1.2,"tetherEffect":0.5,"launchPower":1,"gravity":0.8}"#.utf8)
+        let physics = try JSONDecoder().decode(Physics.self, from: old)
+        XCTAssertEqual(physics.spin, 1.2)
+        XCTAssertEqual(physics.regrabWindow, Physics().regrabWindow)
+    }
+
     func testOrbitsMayCrossTheWalls() {
         var world = GameWorld(viewHeight: viewHeight, player: CGPoint(x: 100, y: 0),
                               velocity: CGVector(dx: 0, dy: 240), planets: [planet(1, x: 40, y: 0, radius: 15)])

@@ -15,7 +15,9 @@ final class GameScene: SKScene {
 
     weak var model: GameModel?
     var feedback: Feedback?
-    var speedMultiplier: CGFloat = 1
+    var speedMultiplier: CGFloat = 1 {
+        didSet { world.timeScale = Double(speedMultiplier) }
+    }
     var showsOrbitGuide = true
     var physics = Physics() {
         didSet { world.physics = physics }
@@ -151,6 +153,7 @@ final class GameScene: SKScene {
         isPaused = false
         removeAction(forKey: "gameOver")
         world = GameWorld(viewHeight: visibleHeight, seed: .random(in: 0...UInt64.max), physics: physics)
+        world.timeScale = Double(speedMultiplier)
         touchesDown.removeAll()
         clock = 0
         reportedScore = -1
