@@ -1,3 +1,20 @@
+# One More Line
+
+Hold to orbit a planet, release to launch. Climb as high as you can without hitting a planet, a wall, or falling off the bottom.
+
+## Native iOS app (`ios/`)
+
+A Swift rewrite of the game (SpriteKit for gameplay, SwiftUI for menus) with a deep-space look. No dependencies.
+
+- Open `ios/OneMoreLine.xcodeproj` in Xcode, pick your iPhone or a simulator, and press Run.
+- Tests: `xcodebuild test -project ios/OneMoreLine.xcodeproj -scheme OneMoreLine -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max'`
+- Debug builds accept a `-autopilot` launch argument that plays runs automatically, handy for checking visuals.
+- Physics (spin speed, tether effect, launch power, gravity, game speed) can be tuned in the app's Settings.
+
+## Web version
+
+The original React + Vite version lives in `src/`. Run it with `npm install && npm run dev`.
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
