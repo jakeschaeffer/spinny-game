@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Xcode (native iOS app in ios/)
+xcuserdata/
+DerivedData/
+ios/build/
