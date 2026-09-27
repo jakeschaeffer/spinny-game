@@ -2,56 +2,23 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <!-- Mobile-optimized viewport -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <!-- Prevent iOS text size adjustment -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <title>One More Line</title>
+    <meta name="description" content="Swing from orb to orb and climb as high as you can." />
+    <meta name="theme-color" content="#0b0a1f" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- Home-screen / standalone app support (iOS + Android) -->
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <!-- Theme color for mobile browsers -->
-    <meta name="theme-color" content="#1e1b4b" />
-    <meta name="msapplication-navbutton-color" content="#1e1b4b" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <!-- Prevent phone number detection -->
-    <meta name="format-detection" content="telephone=no" />
-    <!-- SEO and display -->
-    <meta name="description" content="One More Line - A thrilling vertical climbing game. Swing your way to the top!" />
-    <title>One More Line</title>
-    <style>
-      /* Prevent pull-to-refresh and overscroll */
-      html, body {
-        overscroll-behavior: none;
-        overflow: hidden;
-        position: fixed;
-        width: 100%;
-        height: 100%;
-        touch-action: none;
-        -webkit-touch-callout: none;
-        -webkit-user-select: none;
-        user-select: none;
-        -webkit-tap-highlight-color: transparent;
-      }
-
-      /* Ensure full height on mobile */
-      #root {
-        width: 100%;
-        height: 100%;
-        min-height: 100vh;
-        min-height: -webkit-fill-available;
-      }
-
-      /* Smooth rendering */
-      * {
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-      }
-
-      /* Prevent text selection during gameplay */
-      * {
-        -webkit-touch-callout: none;
-      }
-    </style>
+    <meta name="apple-mobile-web-app-title" content="One More Line" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   </head>
   <body>
     <div id="root"></div>

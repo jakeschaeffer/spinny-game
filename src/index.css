@@ -1,151 +1,297 @@
 @import "tailwindcss";
 
-:root {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  color-scheme: dark;
-  color: rgba(255, 255, 255, 0.95);
-  background-color: #0f0d1a;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* Reset and base styles */
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html, body {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  overscroll-behavior: none;
-}
-
-body {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  min-height: -webkit-fill-available;
-  background: linear-gradient(180deg, #0f0d1a 0%, #1e1b4b 50%, #0f0d1a 100%);
-}
-
-#root {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Smooth animations */
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-@keyframes bounce {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-.animate-bounce {
-  animation: bounce 1s infinite;
-}
-
-/* Button reset for game buttons */
-button {
-  border: none;
-  background: none;
-  cursor: pointer;
-  font-family: inherit;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-
-button:focus {
-  outline: none;
-}
-
-button:focus-visible {
-  outline: 2px solid rgba(236, 72, 153, 0.5);
-  outline-offset: 2px;
-}
-
-/* Canvas rendering optimization */
-canvas {
-  image-rendering: optimizeSpeed;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: pixelated;
-}
-
-/* Mobile-specific optimizations */
-@media (max-width: 480px) {
-  body {
-    padding: 0;
-  }
-
-  /* Ensure touch targets are at least 44px */
-  button {
-    min-height: 44px;
-    min-width: 44px;
-  }
-}
-
-/* Landscape orientation adjustments */
-@media (orientation: landscape) and (max-height: 500px) {
-  body {
-    padding: 8px;
-  }
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
+/* Base styles live in layers so Tailwind utilities can still override them. */
+@layer base {
   :root {
-    --border-color: #fff;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color-scheme: dark;
+    color: #fff;
+    background: #0b0a1f;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  body {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(120% 80% at 50% 0%, #1e1b4b 0%, #0b0a1f 60%) fixed;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+  }
+
+  button {
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  button:focus-visible,
+  input:focus-visible {
+    outline: 2px solid rgb(244 114 182 / 0.8);
+    outline-offset: 2px;
   }
 }
 
-/* Reduced motion support */
+@layer components {
+  .app-root {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+      env(safe-area-inset-left);
+  }
+
+  .game-frame {
+    position: relative;
+    overflow: hidden;
+    background: #0b0a1f;
+    isolation: isolate;
+  }
+
+  .game-frame--card {
+    border-radius: 28px;
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 0.08),
+      0 30px 80px -20px rgb(99 102 241 / 0.45),
+      0 0 60px -10px rgb(236 72 153 / 0.25);
+  }
+
+  .game-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+    cursor: pointer;
+  }
+
+  .hud {
+    padding: 14px 16px 28px 18px;
+    z-index: 10;
+    background: linear-gradient(to bottom, rgb(11 10 31 / 0.85), rgb(11 10 31 / 0));
+  }
+
+  .chip {
+    border-radius: 9999px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .icon-btn {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 9999px;
+    color: #fff;
+    background: rgb(255 255 255 / 0.1);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transition: background 0.15s, transform 0.1s;
+  }
+  .icon-btn:hover {
+    background: rgb(255 255 255 / 0.18);
+  }
+  .icon-btn:active {
+    transform: scale(0.92);
+  }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    padding: 24px;
+    overflow-y: auto;
+    touch-action: pan-y;
+    background: radial-gradient(circle at 50% 40%, rgb(30 27 75 / 0.78), rgb(11 10 31 / 0.9));
+  }
+
+  /* margin:auto centers without clipping when content is taller than the frame */
+  .overlay > * {
+    margin: auto;
+  }
+
+  .sheet {
+    border-radius: 24px;
+    padding: 20px;
+    background: rgb(24 21 56 / 0.96);
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 0.08),
+      0 20px 50px -10px rgb(0 0 0 / 0.6);
+    margin: auto;
+  }
+
+  .title-gradient {
+    background: linear-gradient(135deg, #f472b6 0%, #c084fc 50%, #818cf8 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 4px 24px rgb(236 72 153 / 0.35));
+  }
+
+  .btn-primary {
+    width: 100%;
+    min-height: 52px;
+    border-radius: 9999px;
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    color: #fff;
+    background: linear-gradient(135deg, #ec4899, #8b5cf6);
+    box-shadow:
+      0 10px 30px -8px rgb(236 72 153 / 0.6),
+      inset 0 1px 0 rgb(255 255 255 / 0.25);
+    transition: transform 0.1s, filter 0.15s;
+  }
+  .btn-primary:hover {
+    filter: brightness(1.08);
+  }
+  .btn-primary:active {
+    transform: scale(0.97);
+  }
+
+  .btn-secondary {
+    width: 100%;
+    min-height: 44px;
+    border-radius: 9999px;
+    padding: 0 12px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: rgb(255 255 255 / 0.85);
+    background: rgb(255 255 255 / 0.08);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+    transition: background 0.15s, transform 0.1s;
+  }
+  .btn-secondary:hover {
+    background: rgb(255 255 255 / 0.14);
+  }
+  .btn-secondary:active {
+    transform: scale(0.97);
+  }
+
+  .switch {
+    position: relative;
+    flex-shrink: 0;
+    width: 46px;
+    height: 28px;
+    border-radius: 9999px;
+    background: rgb(255 255 255 / 0.15);
+    transition: background 0.2s;
+  }
+  .switch--on {
+    background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  }
+  .switch-knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    border-radius: 9999px;
+    background: #fff;
+    box-shadow: 0 2px 6px rgb(0 0 0 / 0.3);
+    transition: transform 0.2s cubic-bezier(0.3, 1.4, 0.5, 1);
+  }
+  .switch--on .switch-knob {
+    transform: translateX(18px);
+  }
+
+  .speed-slider {
+    appearance: none;
+    -webkit-appearance: none;
+    height: 36px;
+    background: transparent;
+    touch-action: none;
+  }
+  .speed-slider::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, #ec4899 0, #8b5cf6 var(--fill), rgb(255 255 255 / 0.15) var(--fill));
+  }
+  .speed-slider::-moz-range-track {
+    height: 6px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, #ec4899 0, #8b5cf6 var(--fill), rgb(255 255 255 / 0.15) var(--fill));
+  }
+  .speed-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 24px;
+    height: 24px;
+    margin-top: -9px;
+    border-radius: 9999px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.4);
+  }
+  .speed-slider::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    border: 0;
+    border-radius: 9999px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.4);
+  }
+
+  .anim-fade {
+    animation: fade-in 0.25s ease-out both;
+  }
+  .anim-pop {
+    animation: pop 0.35s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+
+/* Short frames (landscape phones): tighten the overlays so they fit. */
+@media (max-height: 560px) {
+  .overlay {
+    padding: 12px;
+  }
+  .overlay h1 {
+    font-size: 1.75rem;
+  }
+  .overlay h1 br {
+    display: none;
+  }
+  .overlay .mt-7 {
+    margin-top: 1rem;
+  }
+  .btn-primary {
+    min-height: 44px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+  .anim-fade,
+  .anim-pop {
+    animation: none;
   }
-}
-
-/* Selection styling */
-::selection {
-  background: rgba(236, 72, 153, 0.3);
-  color: white;
-}
-
-/* Scrollbar styling (hidden for game) */
-::-webkit-scrollbar {
-  display: none;
-}
-
-* {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
 }
