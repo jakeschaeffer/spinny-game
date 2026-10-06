@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "0E1A00000000000000000E01"
-               BuildableName = "OneMoreLine.app"
-               BlueprintName = "OneMoreLine"
-               ReferencedContainer = "container:OneMoreLine.xcodeproj">
+               BuildableName = "YetAnotherLine.app"
+               BlueprintName = "YetAnotherLine"
+               ReferencedContainer = "container:YetAnotherLine.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -35,9 +35,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "0E1A00000000000000000E02"
-               BuildableName = "OneMoreLineTests.xctest"
-               BlueprintName = "OneMoreLineTests"
-               ReferencedContainer = "container:OneMoreLine.xcodeproj">
+               BuildableName = "YetAnotherLineTests.xctest"
+               BlueprintName = "YetAnotherLineTests"
+               ReferencedContainer = "container:YetAnotherLine.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -57,9 +57,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "0E1A00000000000000000E01"
-            BuildableName = "OneMoreLine.app"
-            BlueprintName = "OneMoreLine"
-            ReferencedContainer = "container:OneMoreLine.xcodeproj">
+            BuildableName = "YetAnotherLine.app"
+            BlueprintName = "YetAnotherLine"
+            ReferencedContainer = "container:YetAnotherLine.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -74,9 +74,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "0E1A00000000000000000E01"
-            BuildableName = "OneMoreLine.app"
-            BlueprintName = "OneMoreLine"
-            ReferencedContainer = "container:OneMoreLine.xcodeproj">
+            BuildableName = "YetAnotherLine.app"
+            BlueprintName = "YetAnotherLine"
+            ReferencedContainer = "container:YetAnotherLine.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

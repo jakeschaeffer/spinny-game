@@ -44,9 +44,9 @@ struct MenuView: View {
 
     private var title: some View {
         VStack(spacing: 4) {
-            Text("ONE MORE")
+            Text("YET ANOTHER")
                 .font(.display(20, .bold))
-                .tracking(10)
+                .tracking(6)
                 .foregroundStyle(.white.opacity(0.75))
             Text("LINE")
                 .font(.display(100, .black))

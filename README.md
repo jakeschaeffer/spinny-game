@@ -1,4 +1,4 @@
-# One More Line
+# Yet Another Line
 
 Hold to orbit a planet, release to launch. Climb as high as you can without hitting a planet, a wall, or falling off the bottom.
 
@@ -6,8 +6,8 @@ Hold to orbit a planet, release to launch. Climb as high as you can without hitt
 
 A Swift rewrite of the game (SpriteKit for gameplay, SwiftUI for menus) with a deep-space look. No dependencies.
 
-- Open `ios/OneMoreLine.xcodeproj` in Xcode, pick your iPhone or a simulator, and press Run.
-- Tests: `xcodebuild test -project ios/OneMoreLine.xcodeproj -scheme OneMoreLine -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max'`
+- Open `ios/YetAnotherLine.xcodeproj` in Xcode, pick your iPhone or a simulator, and press Run.
+- Tests: `xcodebuild test -project ios/YetAnotherLine.xcodeproj -scheme YetAnotherLine -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max'`
 - Debug builds accept a `-autopilot` launch argument that plays runs automatically, handy for checking visuals.
 - Physics (spin speed, tether effect, launch power, gravity, out-of-bounds regrab window, game speed) can be tuned in the app's Settings.
 

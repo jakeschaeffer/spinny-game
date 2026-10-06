@@ -1,6 +1,6 @@
 import CoreGraphics
 import XCTest
-@testable import OneMoreLine
+@testable import YetAnotherLine
 
 final class GameWorldTests: XCTestCase {
     private let viewHeight: CGFloat = 869

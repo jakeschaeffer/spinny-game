@@ -12,25 +12,25 @@
 			containerPortal = 0E1A00000000000000000F01 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 0E1A00000000000000000E01;
-			remoteInfo = OneMoreLine;
+			remoteInfo = YetAnotherLine;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		0E1A00000000000000000A01 /* OneMoreLine.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OneMoreLine.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		0E1A00000000000000000A02 /* OneMoreLineTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OneMoreLineTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		0E1A00000000000000000A03 /* OneMoreLine-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "OneMoreLine-Info.plist"; sourceTree = "<group>"; };
+		0E1A00000000000000000A01 /* YetAnotherLine.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = YetAnotherLine.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0E1A00000000000000000A02 /* YetAnotherLineTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YetAnotherLineTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		0E1A00000000000000000A03 /* YetAnotherLine-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "YetAnotherLine-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		0E1A00000000000000000B01 /* OneMoreLine */ = {
+		0E1A00000000000000000B01 /* YetAnotherLine */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = OneMoreLine;
+			path = YetAnotherLine;
 			sourceTree = "<group>";
 		};
-		0E1A00000000000000000B02 /* OneMoreLineTests */ = {
+		0E1A00000000000000000B02 /* YetAnotherLineTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = OneMoreLineTests;
+			path = YetAnotherLineTests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -56,9 +56,9 @@
 		0E1A00000000000000000D01 = {
 			isa = PBXGroup;
 			children = (
-				0E1A00000000000000000B01 /* OneMoreLine */,
-				0E1A00000000000000000B02 /* OneMoreLineTests */,
-				0E1A00000000000000000A03 /* OneMoreLine-Info.plist */,
+				0E1A00000000000000000B01 /* YetAnotherLine */,
+				0E1A00000000000000000B02 /* YetAnotherLineTests */,
+				0E1A00000000000000000A03 /* YetAnotherLine-Info.plist */,
 				0E1A00000000000000000D02 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -66,8 +66,8 @@
 		0E1A00000000000000000D02 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				0E1A00000000000000000A01 /* OneMoreLine.app */,
-				0E1A00000000000000000A02 /* OneMoreLineTests.xctest */,
+				0E1A00000000000000000A01 /* YetAnotherLine.app */,
+				0E1A00000000000000000A02 /* YetAnotherLineTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -75,9 +75,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		0E1A00000000000000000E01 /* OneMoreLine */ = {
+		0E1A00000000000000000E01 /* YetAnotherLine */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 0E1A00000000000000000202 /* Build configuration list for PBXNativeTarget "OneMoreLine" */;
+			buildConfigurationList = 0E1A00000000000000000202 /* Build configuration list for PBXNativeTarget "YetAnotherLine" */;
 			buildPhases = (
 				0E1A00000000000000000C03 /* Sources */,
 				0E1A00000000000000000C01 /* Frameworks */,
@@ -88,18 +88,18 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				0E1A00000000000000000B01 /* OneMoreLine */,
+				0E1A00000000000000000B01 /* YetAnotherLine */,
 			);
-			name = OneMoreLine;
+			name = YetAnotherLine;
 			packageProductDependencies = (
 			);
-			productName = OneMoreLine;
-			productReference = 0E1A00000000000000000A01 /* OneMoreLine.app */;
+			productName = YetAnotherLine;
+			productReference = 0E1A00000000000000000A01 /* YetAnotherLine.app */;
 			productType = "com.apple.product-type.application";
 		};
-		0E1A00000000000000000E02 /* OneMoreLineTests */ = {
+		0E1A00000000000000000E02 /* YetAnotherLineTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 0E1A00000000000000000203 /* Build configuration list for PBXNativeTarget "OneMoreLineTests" */;
+			buildConfigurationList = 0E1A00000000000000000203 /* Build configuration list for PBXNativeTarget "YetAnotherLineTests" */;
 			buildPhases = (
 				0E1A00000000000000000C04 /* Sources */,
 				0E1A00000000000000000C02 /* Frameworks */,
@@ -111,13 +111,13 @@
 				0E1A00000000000000000102 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				0E1A00000000000000000B02 /* OneMoreLineTests */,
+				0E1A00000000000000000B02 /* YetAnotherLineTests */,
 			);
-			name = OneMoreLineTests;
+			name = YetAnotherLineTests;
 			packageProductDependencies = (
 			);
-			productName = OneMoreLineTests;
-			productReference = 0E1A00000000000000000A02 /* OneMoreLineTests.xctest */;
+			productName = YetAnotherLineTests;
+			productReference = 0E1A00000000000000000A02 /* YetAnotherLineTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
@@ -139,7 +139,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 0E1A00000000000000000201 /* Build configuration list for PBXProject "OneMoreLine" */;
+			buildConfigurationList = 0E1A00000000000000000201 /* Build configuration list for PBXProject "YetAnotherLine" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -153,8 +153,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				0E1A00000000000000000E01 /* OneMoreLine */,
-				0E1A00000000000000000E02 /* OneMoreLineTests */,
+				0E1A00000000000000000E01 /* YetAnotherLine */,
+				0E1A00000000000000000E02 /* YetAnotherLineTests */,
 			);
 		};
 /* End PBXProject section */
@@ -196,7 +196,7 @@
 /* Begin PBXTargetDependency section */
 		0E1A00000000000000000102 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 0E1A00000000000000000E01 /* OneMoreLine */;
+			target = 0E1A00000000000000000E01 /* YetAnotherLine */;
 			targetProxy = 0E1A00000000000000000101 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -267,12 +267,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 3BGFWC629H;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "OneMoreLine-Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "One More Line";
+				INFOPLIST_FILE = "YetAnotherLine-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Yet Another Line";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.arcade-games";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -299,12 +299,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 3BGFWC629H;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "OneMoreLine-Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "One More Line";
+				INFOPLIST_FILE = "YetAnotherLine-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Yet Another Line";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.arcade-games";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -330,7 +330,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 3BGFWC629H;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
@@ -339,7 +339,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OneMoreLine.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/OneMoreLine";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/YetAnotherLine.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/YetAnotherLine";
 			};
 			name = Debug;
 		};
@@ -348,7 +348,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 3BGFWC629H;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
@@ -357,14 +357,14 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OneMoreLine.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/OneMoreLine";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/YetAnotherLine.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/YetAnotherLine";
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		0E1A00000000000000000201 /* Build configuration list for PBXProject "OneMoreLine" */ = {
+		0E1A00000000000000000201 /* Build configuration list for PBXProject "YetAnotherLine" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				0E1A00000000000000000301 /* Debug */,
@@ -373,7 +373,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		0E1A00000000000000000202 /* Build configuration list for PBXNativeTarget "OneMoreLine" */ = {
+		0E1A00000000000000000202 /* Build configuration list for PBXNativeTarget "YetAnotherLine" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				0E1A00000000000000000303 /* Debug */,
@@ -382,7 +382,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		0E1A00000000000000000203 /* Build configuration list for PBXNativeTarget "OneMoreLineTests" */ = {
+		0E1A00000000000000000203 /* Build configuration list for PBXNativeTarget "YetAnotherLineTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				0E1A00000000000000000305 /* Debug */,

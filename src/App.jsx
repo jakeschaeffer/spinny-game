@@ -61,7 +61,7 @@ const sounds = {
   }
 };
 
-const OneMoreLine = () => {
+const YetAnotherLine = () => {
   // UI State (things that need to trigger re-renders)
   const [gameState, setGameState] = useState('menu');
   const [score, setScore] = useState(0);
@@ -588,7 +588,7 @@ const OneMoreLine = () => {
       {/* Header */}
       <div className="w-full max-w-lg flex items-center justify-between px-2 mb-2">
         <div className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">
-          ONE MORE LINE
+          YET ANOTHER LINE
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -841,7 +841,7 @@ const OneMoreLine = () => {
           {gameState === 'menu' && (
             <div className="absolute inset-0 bg-gradient-to-b from-gray-900/95 to-indigo-900/95 backdrop-blur-sm flex flex-col items-center justify-center" style={{ zIndex: 50 }}>
               <div className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500 mb-2">
-                ONE MORE LINE
+                YET ANOTHER LINE
               </div>
               <p className="text-indigo-300 text-sm mb-8">Swing your way to the top!</p>
 
@@ -980,4 +980,4 @@ const OneMoreLine = () => {
   );
 };
 
-export default OneMoreLine;
+export default YetAnotherLine;
