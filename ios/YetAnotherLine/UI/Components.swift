@@ -80,6 +80,10 @@ struct GlassIconButton: View {
                 .foregroundStyle(.white)
                 .frame(width: 48, height: 48)
                 .glassCircle()
+                // The glass effect isn't hit-testable, so without this only the symbol's strokes
+                // register taps (e.g. just the two thin bars of the pause icon). Make the whole
+                // circle tappable.
+                .contentShape(Circle())
         }
         .buttonStyle(PressableButtonStyle())
         .accessibilityLabel(label)
