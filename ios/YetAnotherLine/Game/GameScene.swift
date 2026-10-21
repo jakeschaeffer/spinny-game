@@ -16,7 +16,7 @@ final class GameScene: SKScene {
     weak var model: GameModel?
     var feedback: Feedback?
     var speedMultiplier: CGFloat = 1 {
-        didSet { world.timeScale = Double(speedMultiplier) }
+        didSet { world.timeScale = Double(runSpeed) }
     }
     var showsOrbitGuide = true
     var physics = Physics() {
@@ -60,6 +60,8 @@ final class GameScene: SKScene {
     private var unit: CGFloat = 1
     /// Height of the view in world units.
     private var visibleHeight: CGFloat { size.height / unit }
+    /// How fast a live run plays: the game speed setting times the mode's own speed.
+    private var runSpeed: CGFloat { speedMultiplier * CGFloat(world.rules.speed) }
 
     #if DEBUG
     private let debugAutopilot = ProcessInfo.processInfo.arguments.contains("-autopilot")
@@ -135,9 +137,9 @@ final class GameScene: SKScene {
         beginRun()
     }
 
-    func startGame() {
+    func startGame(rules: Rules) {
         mode = .playing
-        beginRun()
+        beginRun(rules: rules)
         feedback?.prepare()
     }
 
@@ -148,12 +150,12 @@ final class GameScene: SKScene {
         lastUpdateTime = nil
     }
 
-    private func beginRun() {
+    private func beginRun(rules: Rules = Rules()) {
         isGamePaused = false
         isPaused = false
         removeAction(forKey: "gameOver")
-        world = GameWorld(viewHeight: visibleHeight, seed: .random(in: 0...UInt64.max), physics: physics)
-        world.timeScale = Double(speedMultiplier)
+        world = GameWorld(viewHeight: visibleHeight, seed: .random(in: 0...UInt64.max), physics: physics, rules: rules)
+        world.timeScale = Double(runSpeed)
         touchesDown.removeAll()
         clock = 0
         reportedScore = -1
@@ -238,7 +240,7 @@ final class GameScene: SKScene {
                 advance(by: dt, autopilot: true)
             }
         case .playing:
-            advance(by: dt * speedMultiplier, autopilot: debugAutopilot)
+            advance(by: dt * runSpeed, autopilot: debugAutopilot)
         case .dying, .gameOver:
             clock += dt
         }
@@ -280,6 +282,11 @@ final class GameScene: SKScene {
             case .launched:
                 if live { feedback?.launched() }
                 tether.hide()
+            case .wallHit:
+                guard live else { break }
+                feedback?.wallHit()
+                let x = min(max(world.player.x, 100), GameWorld.Tuning.width - 100)
+                popup("LATCH ON!", at: CGPoint(x: x, y: world.player.y), color: Theme.danger)
             case .died:
                 explode()
             }
@@ -467,11 +474,11 @@ final class GameScene: SKScene {
         }
     }
 
-    private func popup(_ text: String, at point: CGPoint) {
+    private func popup(_ text: String, at point: CGPoint, color: UIColor = Theme.gold) {
         let label = SKLabelNode(fontNamed: "AvenirNext-HeavyItalic")
         label.text = text
         label.fontSize = 22
-        label.fontColor = Theme.gold
+        label.fontColor = color
         label.position = CGPoint(x: point.x, y: point.y + 22)
         label.zPosition = 30
         label.setScale(0.6)

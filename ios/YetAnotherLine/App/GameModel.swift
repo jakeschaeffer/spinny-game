@@ -20,7 +20,10 @@ final class GameModel {
     private(set) var phase: Phase = .menu
     private(set) var score = 0
     private(set) var combo = 0
-    private(set) var best: Int
+    /// Each mode's best score.
+    private(set) var bests: [Difficulty: Int]
+    /// The mode of the run in progress or just finished. Changing `difficulty` applies from the next run.
+    private(set) var runDifficulty: Difficulty
     private(set) var passedBest = false
     private(set) var showTutorial = false
     private(set) var lastRun: RunSummary?
@@ -44,6 +47,9 @@ final class GameModel {
             scene.showsOrbitGuide = showOrbitGuide
         }
     }
+    var difficulty: Difficulty {
+        didSet { defaults.set(difficulty.rawValue, forKey: Keys.difficulty) }
+    }
     var physics: Physics {
         didSet {
             defaults.set(try? JSONEncoder().encode(physics), forKey: Keys.physics)
@@ -63,18 +69,26 @@ final class GameModel {
     @ObservationIgnored private var tutorialTask: Task<Void, Never>?
 
     private enum Keys {
-        static let best = "oneMoreLine.best"
+        static let difficulty = "oneMoreLine.difficulty"
         static let sound = "oneMoreLine.sound"
         static let haptics = "oneMoreLine.haptics"
         static let guide = "oneMoreLine.orbitGuide"
         static let physics = "oneMoreLine.physics"
         static let speed = "oneMoreLine.speed"
+
+        static func best(_ difficulty: Difficulty) -> String {
+            // Astro keeps the original key, so existing players' best carries over as their Astro best.
+            difficulty == .astro ? "oneMoreLine.best" : "oneMoreLine.best.\(difficulty.rawValue)"
+        }
     }
 
     init() {
         let defaults = UserDefaults.standard
         defaults.register(defaults: [Keys.sound: true, Keys.haptics: true, Keys.guide: true, Keys.speed: 1.0])
-        best = defaults.integer(forKey: Keys.best)
+        let difficulty = defaults.string(forKey: Keys.difficulty).flatMap(Difficulty.init(rawValue:)) ?? .astro
+        self.difficulty = difficulty
+        runDifficulty = difficulty
+        bests = Dictionary(uniqueKeysWithValues: Difficulty.allCases.map { ($0, defaults.integer(forKey: Keys.best($0))) })
         soundEnabled = defaults.bool(forKey: Keys.sound)
         hapticsEnabled = defaults.bool(forKey: Keys.haptics)
         showOrbitGuide = defaults.bool(forKey: Keys.guide)
@@ -92,6 +106,10 @@ final class GameModel {
         scene.showAttract()
     }
 
+    /// The mode the screen is about: the one picked on the menu, otherwise the current run's.
+    var shownDifficulty: Difficulty { phase == .menu ? difficulty : runDifficulty }
+    var best: Int { bests[shownDifficulty] ?? 0 }
+
     // MARK: Navigation
 
     func play() {
@@ -100,8 +118,9 @@ final class GameModel {
         combo = 0
         passedBest = false
         lastRun = nil
+        runDifficulty = difficulty
         phase = .playing
-        scene.startGame()
+        scene.startGame(rules: runDifficulty.rules)
 
         showTutorial = true
         tutorialTask?.cancel()
@@ -133,9 +152,11 @@ final class GameModel {
         scene.showAttract()
     }
 
-    func resetBest() {
-        best = 0
-        defaults.set(0, forKey: Keys.best)
+    func resetBests() {
+        for difficulty in Difficulty.allCases {
+            bests[difficulty] = 0
+            defaults.set(0, forKey: Keys.best(difficulty))
+        }
     }
 
     // MARK: Scene callbacks
@@ -147,10 +168,10 @@ final class GameModel {
     func reachedNewBest() { passedBest = true }
 
     func runEnded(score: Int, bestCombo: Int, duration: TimeInterval) {
-        let isNewBest = score > best
+        let isNewBest = score > bests[runDifficulty] ?? 0
         if isNewBest {
-            best = score
-            defaults.set(score, forKey: Keys.best)
+            bests[runDifficulty] = score
+            defaults.set(score, forKey: Keys.best(runDifficulty))
         }
         lastRun = RunSummary(score: score, bestCombo: bestCombo, duration: duration, isNewBest: isNewBest)
         combo = 0

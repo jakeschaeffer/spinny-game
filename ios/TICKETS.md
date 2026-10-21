@@ -5,8 +5,8 @@ Feedback from Oct 21, 2026, split into tickets. Each lands as its own commit on 
 | # | Ticket | Status |
 |---|---|---|
 | 1 | Ramp up the planet count | Done |
-| 2 | Easy and Astro (Hard) modes, each with its own scores | In progress |
-| 3 | Track best combo | To do |
+| 2 | Easy and Astro (Hard) modes, each with its own scores | Done |
+| 3 | Track best combo | In progress |
 | 4 | Learning mode | To do |
 | 5 | Game Center leaderboard | To do |
 | 6 | Path trace toggle | To do |

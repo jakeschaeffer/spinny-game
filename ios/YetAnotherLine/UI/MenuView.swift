@@ -19,7 +19,7 @@ struct MenuView: View {
                 VStack(spacing: 26) {
                     PrimaryButton(title: "LAUNCH", systemImage: "sparkles") { model.play() }
                     howToPlay
-                    if model.best > 0 { bestBadge }
+                    modeBadge
                 }
                 Spacer()
                 HStack(spacing: 16) {
@@ -85,15 +85,23 @@ struct MenuView: View {
         }
     }
 
-    private var bestBadge: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "star.fill")
-                .foregroundStyle(Color.spaceGold)
-            Text("BEST \(model.best)")
-                .font(.display(14, .bold))
-                .monospacedDigit()
-                .foregroundStyle(.white)
+    private var modeBadge: some View {
+        HStack(spacing: 10) {
+            Text(model.difficulty.badge)
+                .font(.display(13, .heavy))
+                .tracking(2)
+                .foregroundStyle(Color.spaceCyan)
+            if model.best > 0 {
+                Rectangle().fill(.white.opacity(0.2)).frame(width: 1, height: 16)
+                Image(systemName: "star.fill")
+                    .foregroundStyle(Color.spaceGold)
+                Text("BEST \(model.best)")
+                    .font(.display(14, .bold))
+                    .monospacedDigit()
+                    .foregroundStyle(.white)
+            }
         }
+        .accessibilityElement(children: .combine)
         .padding(.horizontal, 16)
         .padding(.vertical, 9)
         .background(.white.opacity(0.07), in: Capsule())

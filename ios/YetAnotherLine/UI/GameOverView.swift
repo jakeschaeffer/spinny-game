@@ -35,7 +35,7 @@ struct GameOverView: View {
                                 .background(Color.spaceGold, in: Capsule())
                                 .shadow(color: .spaceGold.opacity(0.6), radius: 12)
                         } else {
-                            Text("BEST \(model.best)")
+                            Text("\(model.runDifficulty.badge) BEST \(model.best)")
                                 .font(.display(13, .bold))
                                 .tracking(1.5)
                                 .monospacedDigit()

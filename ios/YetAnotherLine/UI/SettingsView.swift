@@ -8,6 +8,19 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    Picker("Mode", selection: $model.difficulty) {
+                        ForEach(Difficulty.allCases) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets())
+                } header: {
+                    Text("Mode")
+                } footer: {
+                    Text("Easy has fewer planets, runs a bit slower, and gives you 300 ms to latch onto a planet after hitting a wall. Each mode keeps its own best score. A change applies from your next run.")
+                }
+
                 Section("Feel") {
                     Toggle(isOn: $model.soundEnabled) {
                         Label("Sound", systemImage: "speaker.wave.2.fill")
@@ -48,8 +61,8 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    Button("Reset best score", role: .destructive) { confirmReset = true }
-                        .disabled(model.best == 0)
+                    Button("Reset best scores", role: .destructive) { confirmReset = true }
+                        .disabled(model.bests.values.allSatisfy { $0 == 0 })
                 }
             }
             .scrollContentBackground(.hidden)
@@ -61,8 +74,8 @@ struct SettingsView: View {
                     Button("Done") { dismiss() }
                 }
             }
-            .confirmationDialog("Reset your best score?", isPresented: $confirmReset, titleVisibility: .visible) {
-                Button("Reset", role: .destructive) { model.resetBest() }
+            .confirmationDialog("Reset your best scores in every mode?", isPresented: $confirmReset, titleVisibility: .visible) {
+                Button("Reset", role: .destructive) { model.resetBests() }
             }
         }
         .tint(.spaceCyan)

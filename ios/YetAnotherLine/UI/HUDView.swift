@@ -56,8 +56,8 @@ struct HUDView: View {
                 .font(.display(12, .heavy))
                 .tracking(1.5)
                 .foregroundStyle(Color.spaceGold)
-        } else if model.best > 0 {
-            Text("BEST \(model.best)")
+        } else {
+            Text(model.best > 0 ? "\(model.runDifficulty.badge) · BEST \(model.best)" : model.runDifficulty.badge)
                 .font(.display(12, .bold))
                 .tracking(1.5)
                 .monospacedDigit()
