@@ -44,7 +44,15 @@ struct GameOverView: View {
                     }
 
                     HStack(spacing: 0) {
-                        stat("BEST COMBO", run.map { "×\(max($0.bestCombo, 1))" } ?? "–")
+                        stat("BEST COMBO", run.map { "×\(max($0.bestCombo, 1))" } ?? "–") {
+                            if run?.isNewBestCombo == true {
+                                Label("NEW BEST", systemImage: "star.fill")
+                                    .foregroundStyle(Color.spaceGold)
+                            } else if model.bestCombo > 1 {
+                                Text("\(model.runDifficulty.badge) BEST ×\(model.bestCombo)")
+                                    .foregroundStyle(.white.opacity(0.4))
+                            }
+                        }
                         Rectangle().fill(.white.opacity(0.15)).frame(width: 1, height: 34)
                         stat("FLIGHT", run.map { String(format: "%.1fs", $0.duration) } ?? "–")
                     }
@@ -65,7 +73,8 @@ struct GameOverView: View {
         }
     }
 
-    private func stat(_ title: String, _ value: String) -> some View {
+    private func stat(_ title: String, _ value: String,
+                      @ViewBuilder note: () -> some View = { EmptyView() }) -> some View {
         VStack(spacing: 4) {
             Text(value)
                 .font(.display(20, .heavy))
@@ -75,6 +84,10 @@ struct GameOverView: View {
                 .font(.display(10, .semibold))
                 .tracking(1.5)
                 .foregroundStyle(.white.opacity(0.5))
+            note()
+                .font(.display(9, .heavy))
+                .tracking(1)
+                .monospacedDigit()
         }
         .frame(maxWidth: .infinity)
     }

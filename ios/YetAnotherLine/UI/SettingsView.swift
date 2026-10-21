@@ -62,7 +62,7 @@ struct SettingsView: View {
 
                 Section {
                     Button("Reset best scores", role: .destructive) { confirmReset = true }
-                        .disabled(model.bests.values.allSatisfy { $0 == 0 })
+                        .disabled(model.bests.values.allSatisfy { $0 == 0 } && model.bestCombos.values.allSatisfy { $0 == 0 })
                 }
             }
             .scrollContentBackground(.hidden)
@@ -74,7 +74,8 @@ struct SettingsView: View {
                     Button("Done") { dismiss() }
                 }
             }
-            .confirmationDialog("Reset your best scores in every mode?", isPresented: $confirmReset, titleVisibility: .visible) {
+            .confirmationDialog("Reset your best scores and combos in every mode?", isPresented: $confirmReset,
+                                titleVisibility: .visible) {
                 Button("Reset", role: .destructive) { model.resetBests() }
             }
         }

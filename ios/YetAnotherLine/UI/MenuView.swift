@@ -100,6 +100,14 @@ struct MenuView: View {
                     .monospacedDigit()
                     .foregroundStyle(.white)
             }
+            if model.bestCombo > 1 {
+                Rectangle().fill(.white.opacity(0.2)).frame(width: 1, height: 16)
+                Text("×\(model.bestCombo)")
+                    .font(.display(14, .heavy))
+                    .monospacedDigit()
+                    .foregroundStyle(Color.spaceGold)
+                    .accessibilityLabel("best combo \(model.bestCombo)")
+            }
         }
         .accessibilityElement(children: .combine)
         .padding(.horizontal, 16)

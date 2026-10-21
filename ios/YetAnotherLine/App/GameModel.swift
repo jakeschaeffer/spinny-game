@@ -15,13 +15,15 @@ final class GameModel {
         let bestCombo: Int
         let duration: TimeInterval
         let isNewBest: Bool
+        let isNewBestCombo: Bool
     }
 
     private(set) var phase: Phase = .menu
     private(set) var score = 0
     private(set) var combo = 0
-    /// Each mode's best score.
+    /// Each mode's best score and best combo.
     private(set) var bests: [Difficulty: Int]
+    private(set) var bestCombos: [Difficulty: Int]
     /// The mode of the run in progress or just finished. Changing `difficulty` applies from the next run.
     private(set) var runDifficulty: Difficulty
     private(set) var passedBest = false
@@ -65,7 +67,7 @@ final class GameModel {
 
     let scene: GameScene
     let feedback = Feedback()
-    @ObservationIgnored private let defaults = UserDefaults.standard
+    @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private var tutorialTask: Task<Void, Never>?
 
     private enum Keys {
@@ -80,15 +82,20 @@ final class GameModel {
             // Astro keeps the original key, so existing players' best carries over as their Astro best.
             difficulty == .astro ? "oneMoreLine.best" : "oneMoreLine.best.\(difficulty.rawValue)"
         }
+
+        static func bestCombo(_ difficulty: Difficulty) -> String { "oneMoreLine.bestCombo.\(difficulty.rawValue)" }
     }
 
-    init() {
-        let defaults = UserDefaults.standard
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
         defaults.register(defaults: [Keys.sound: true, Keys.haptics: true, Keys.guide: true, Keys.speed: 1.0])
         let difficulty = defaults.string(forKey: Keys.difficulty).flatMap(Difficulty.init(rawValue:)) ?? .astro
         self.difficulty = difficulty
         runDifficulty = difficulty
         bests = Dictionary(uniqueKeysWithValues: Difficulty.allCases.map { ($0, defaults.integer(forKey: Keys.best($0))) })
+        bestCombos = Dictionary(uniqueKeysWithValues: Difficulty.allCases.map {
+            ($0, defaults.integer(forKey: Keys.bestCombo($0)))
+        })
         soundEnabled = defaults.bool(forKey: Keys.sound)
         hapticsEnabled = defaults.bool(forKey: Keys.haptics)
         showOrbitGuide = defaults.bool(forKey: Keys.guide)
@@ -109,6 +116,7 @@ final class GameModel {
     /// The mode the screen is about: the one picked on the menu, otherwise the current run's.
     var shownDifficulty: Difficulty { phase == .menu ? difficulty : runDifficulty }
     var best: Int { bests[shownDifficulty] ?? 0 }
+    var bestCombo: Int { bestCombos[shownDifficulty] ?? 0 }
 
     // MARK: Navigation
 
@@ -155,7 +163,9 @@ final class GameModel {
     func resetBests() {
         for difficulty in Difficulty.allCases {
             bests[difficulty] = 0
+            bestCombos[difficulty] = 0
             defaults.set(0, forKey: Keys.best(difficulty))
+            defaults.set(0, forKey: Keys.bestCombo(difficulty))
         }
     }
 
@@ -173,7 +183,14 @@ final class GameModel {
             bests[runDifficulty] = score
             defaults.set(score, forKey: Keys.best(runDifficulty))
         }
-        lastRun = RunSummary(score: score, bestCombo: bestCombo, duration: duration, isNewBest: isNewBest)
+        // A single latch isn't a combo, so ×1 never counts as a record.
+        let isNewBestCombo = bestCombo > 1 && bestCombo > bestCombos[runDifficulty] ?? 0
+        if isNewBestCombo {
+            bestCombos[runDifficulty] = bestCombo
+            defaults.set(bestCombo, forKey: Keys.bestCombo(runDifficulty))
+        }
+        lastRun = RunSummary(score: score, bestCombo: bestCombo, duration: duration, isNewBest: isNewBest,
+                             isNewBestCombo: isNewBestCombo)
         combo = 0
         tutorialTask?.cancel()
         showTutorial = false
