@@ -12,13 +12,14 @@ How to ship an update to the App Store, and what went wrong or worked well last 
 | App Store Connect app | https://appstoreconnect.apple.com/apps/6816804636/distribution |
 | Signing | Automatic. Needs the "Apple Distribution" certificate in the keychain and an Apple ID signed in to Xcode (Settings → Accounts). |
 | Export compliance | Answered in `YetAnotherLine-Info.plist` (`ITSAppUsesNonExemptEncryption`), so builds skip the encryption question. |
+| Game Center | Entitlement in `YetAnotherLine.entitlements`. Leaderboard IDs: `com.jakeschaeffer.onemoreline.score.easy` and `com.jakeschaeffer.onemoreline.score.astro` (see `GameCenter.swift`). |
 
 ## Release history
 
 | Version | Build | Notes |
 |---|---|---|
 | 1.0 | 1–2 | First release. |
-| 1.0.1 | 3 | Glass icon buttons (pause, menu sound/settings) tappable across the whole circle. Submitted Oct 20, 2026. |
+| 1.0.1 | 3 | Glass icon buttons (pause, menu sound/settings) tappable across the whole circle. Submitted Oct 20, 2026; approved by Oct 21. |
 
 Add a row each time you ship.
 
@@ -82,6 +83,25 @@ git push origin HEAD:yet-another-line-app-store
 7. In the panel, confirm it lists only the new version, then **Submit for Review**. Status becomes **Waiting for Review**. Review can take up to 48 hours, and Apple emails when it's done.
 
 You can withdraw a submission from Distribution → App Review until review starts.
+
+## Game Center leaderboards (one-time setup)
+
+The app submits each mode's best score to its own leaderboard. The leaderboards have to exist in App Store Connect, and the first version that uses them has to ship them, or scores go nowhere.
+
+**Status:** step 1 was done on Oct 21, 2026. Both leaderboards exist (Prepare for Submission), each with an English (U.S.) localization and " point"/" points" suffixes, and Astro is first and the default. Steps 2 and 3 are still to do.
+
+1. In App Store Connect, open Distribution → Game Center (under Growth & Marketing) and add two **classic** leaderboards:
+
+   | Reference name | Leaderboard ID | Display name |
+   |---|---|---|
+   | Easy high score | `com.jakeschaeffer.onemoreline.score.easy` | Easy |
+   | Astro high score | `com.jakeschaeffer.onemoreline.score.astro` | Astro (Hard) |
+
+   Score format: Integer. Submission type: Best score. Sort order: High to low. Leaderboard IDs can never be reused, even after deletion, so copy them exactly.
+2. On the new version's page, turn on **Game Center** and add both leaderboards. They go live when that version is approved. Don't use a leaderboard's own "Add for Review" button; they ride along with the version.
+3. To test before release, run a development or TestFlight build on a phone signed in to Game Center. Those builds use the Game Center sandbox, which only shows leaderboards that exist in App Store Connect.
+
+The simulator usually isn't signed in to Game Center; the leaderboard button then shows a "Sign in to Game Center" prompt instead.
 
 ## Lessons from 1.0.1
 

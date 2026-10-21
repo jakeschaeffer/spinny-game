@@ -164,12 +164,75 @@ final class GameWorldTests: XCTestCase {
         }
     }
 
+    func testRunsOpenWithFewerPlanetsAndFillInAsYouClimb() {
+        let astro = Difficulty.astro.rules
+        XCTAssertEqual(astro.rowSpacing(at: 0), astro.startSpacing)
+        XCTAssertGreaterThan(astro.rowSpacing(at: 1000), astro.rowSpacing(at: 2000))
+        XCTAssertEqual(astro.rowSpacing(at: GameWorld.Tuning.fullDensityHeight), 1)
+        XCTAssertEqual(astro.rowSpacing(at: 20_000), 1, "the original density from score 500 up")
+
+        // At full density the first ~800 units would hold about 800 / 90 ≈ 9 planets.
+        var total = 0
+        for seed in UInt64(1)...25 {
+            total += GameWorld(viewHeight: viewHeight, seed: seed).planets.filter { $0.position.y < 800 }.count
+        }
+        XCTAssertLessThan(Double(total) / 25, 6.5)
+    }
+
+    func testEasyHasFewerPlanetsThanAstroAtEveryHeight() {
+        for y in stride(from: CGFloat(0), through: 12_000, by: 250) {
+            XCTAssertGreaterThan(Difficulty.easy.rules.rowSpacing(at: y), Difficulty.astro.rules.rowSpacing(at: y), "y \(y)")
+        }
+    }
+
+    /// Flies straight at the left wall with a planet in reach above.
+    private func headingForTheWall(_ difficulty: Difficulty) -> GameWorld {
+        GameWorld(viewHeight: viewHeight, player: CGPoint(x: 30, y: 0), velocity: CGVector(dx: -200, dy: 0),
+                  planets: [planet(1, x: 60, y: 80)], rules: difficulty.rules)
+    }
+
+    func testEasyForgivesAWallHitIfYouLatchInTime() {
+        var world = headingForTheWall(.easy)
+        XCTAssertEqual(run(&world, seconds: 0.5), [.wallHit])
+        XCTAssertEqual(run(&world, seconds: 0.2), [], "inside the 300 ms grace")
+        XCTAssertEqual(world.press(), [.hooked(planetID: 1, combo: 1)])
+        XCTAssertEqual(run(&world, seconds: 1.5), [], "latched, the swing may cross the wall")
+    }
+
+    func testEasyWallHitCrashesWhenTheGraceRunsOut() {
+        var world = headingForTheWall(.easy)
+        XCTAssertEqual(run(&world, seconds: 0.5), [.wallHit])
+        XCTAssertEqual(run(&world, seconds: 0.28), [])
+        XCTAssertEqual(run(&world, seconds: 0.05), [.died(.wall)])
+    }
+
+    func testAstroWallHitIsFatalStraightAway() {
+        var world = headingForTheWall(.astro)
+        XCTAssertEqual(run(&world, seconds: 0.5), [.died(.wall)])
+    }
+
+    func testEasyGraceAlsoCoversAReleasePastTheWallButOnlyOnce() {
+        var physics = Physics(gravity: 0)
+        physics.regrabWindow = 0.1
+        var world = GameWorld(viewHeight: viewHeight, player: CGPoint(x: 100, y: 0), velocity: CGVector(dx: 0, dy: 240),
+                              planets: [planet(1, x: 40, y: 0, radius: 15)], physics: physics, rules: Difficulty.easy.rules)
+        _ = world.press()
+        while world.player.x > 0 { XCTAssertEqual(world.step(step), []) }
+        XCTAssertEqual(world.release().last, .wallHit)
+        XCTAssertEqual(run(&world, seconds: 0.28), [], "Easy's 300 ms, not the 100 ms regrab window")
+        XCTAssertEqual(run(&world, seconds: 0.05), [.died(.wall)], "no second grace for the same flight")
+    }
+
     /// Plays whole runs with the autopilot: a smoke test that levels stay flyable and the rules hang together.
     func testAutopilotClimbsAndPlanetsLeaveRoomToFly() {
+        for difficulty in Difficulty.allCases { autopilotSmokeTest(difficulty) }
+    }
+
+    private func autopilotSmokeTest(_ difficulty: Difficulty) {
         var scores: [Int] = []
         var tightestGap = CGFloat.infinity
         for seed in UInt64(1)...12 {
-            var world = GameWorld(viewHeight: viewHeight, seed: seed)
+            var world = GameWorld(viewHeight: viewHeight, seed: seed, rules: difficulty.rules)
             var seen: [Int: Planet] = [:]
             var ticks = 0
             while !world.isDead, Double(ticks) * step < 40 {
@@ -191,7 +254,8 @@ final class GameWorldTests: XCTestCase {
             }
         }
         let median = scores.sorted()[scores.count / 2]
-        XCTAssertGreaterThan(median, 500, "scores: \(scores)")
-        XCTAssertGreaterThan(tightestGap, GameWorld.Tuning.playerRadius * 2 + 10)
+        XCTAssertGreaterThan(median, 500, "\(difficulty) scores: \(scores)")
+        XCTAssertGreaterThan(tightestGap, GameWorld.Tuning.playerRadius * 2 + 10, "\(difficulty)")
+        print("autopilot \(difficulty) scores: \(scores.sorted())")
     }
 }

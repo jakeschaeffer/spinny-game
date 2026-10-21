@@ -39,25 +39,35 @@ struct HUDView: View {
             Spacer()
             // Low on the screen, behind the comet, so it never hides the planets ahead.
             ZStack {
-                if model.showTutorial {
+                if let lesson = model.lesson {
+                    LessonCoachCard(step: lesson.step, score: model.score)
+                        .id(lesson.step)
+                        .transition(.opacity.combined(with: .move(edge: .bottom)))
+                } else if model.showTutorial {
                     TutorialCard()
                         .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
             }
             .allowsHitTesting(false)
             .animation(.easeOut(duration: 0.4), value: model.showTutorial)
+            .animation(.easeOut(duration: 0.35), value: model.lesson?.step)
             .padding(.bottom, 24)
         }
     }
 
     @ViewBuilder private var bestLine: some View {
-        if model.passedBest {
+        if model.lesson != nil {
+            Text("LESSON · GOAL \(Lesson.goal)")
+                .font(.display(12, .bold))
+                .tracking(1.5)
+                .foregroundStyle(Color.spaceCyan.opacity(0.8))
+        } else if model.passedBest {
             Label("NEW BEST", systemImage: "star.fill")
                 .font(.display(12, .heavy))
                 .tracking(1.5)
                 .foregroundStyle(Color.spaceGold)
-        } else if model.best > 0 {
-            Text("BEST \(model.best)")
+        } else {
+            Text(model.best > 0 ? "\(model.runDifficulty.badge) · BEST \(model.best)" : model.runDifficulty.badge)
                 .font(.display(12, .bold))
                 .tracking(1.5)
                 .monospacedDigit()
@@ -79,6 +89,64 @@ private struct ComboBadge: View {
             .background(LinearGradient(colors: [.spaceGold, Color(uiColor: UIColor(hex: 0xFB923C))],
                                        startPoint: .leading, endPoint: .trailing), in: Capsule())
             .shadow(color: .spaceGold.opacity(0.5), radius: 10)
+    }
+}
+
+/// The learning mode's current tip, low on the screen like the tutorial card.
+private struct LessonCoachCard: View {
+    let step: Lesson.Step
+    let score: Int
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 12) {
+                Image(systemName: tip.icon)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(step == .walls ? Color(uiColor: Theme.danger) : .spaceCyan)
+                    .frame(width: 26)
+                Text(tip.title)
+                    .font(.display(17, .black))
+                    .foregroundStyle(.white)
+            }
+            Text(tip.detail)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(.white.opacity(0.75))
+                .fixedSize(horizontal: false, vertical: true)
+            if step == .climb {
+                HStack(spacing: 10) {
+                    ProgressView(value: min(Double(score) / Double(Lesson.goal), 1))
+                        .tint(.spaceCyan)
+                    Text("\(min(score, Lesson.goal)) / \(Lesson.goal)")
+                        .font(.display(12, .heavy))
+                        .monospacedDigit()
+                        .foregroundStyle(.white.opacity(0.8))
+                }
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 18)
+        .frame(maxWidth: 340, alignment: .leading)
+        .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(.white.opacity(0.15), lineWidth: 1))
+        .padding(.horizontal, 24)
+    }
+
+    private var tip: (icon: String, title: String, detail: String) {
+        switch step {
+        case .latch:
+            ("hand.tap.fill", "HOLD TO LATCH", "When a planet lights up, press and hold anywhere to latch onto it.")
+        case .swing:
+            ("arrow.triangle.2.circlepath", "KEEP HOLDING", "You swing around the planet for as long as you hold.")
+        case .launch:
+            ("arrow.up.forward", "LET GO TO LAUNCH", "You fly off the way you're moving, so let go while you're heading up.")
+        case .chain:
+            ("point.3.connected.trianglepath.dotted", "LATCH THE NEXT ONE", "Grab another planet before you fall. Quick latches build a combo.")
+        case .walls:
+            ("exclamationmark.triangle.fill", "MIND THE WALLS",
+             "Flying into a side wall ends your run. Swinging through one while you're latched is safe.")
+        case .climb:
+            ("flag.checkered", "CLIMB TO \(Lesson.goal)", "Keep latching and launching to reach the finish line.")
+        }
     }
 }
 

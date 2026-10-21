@@ -19,13 +19,17 @@ struct MenuView: View {
                 VStack(spacing: 26) {
                     PrimaryButton(title: "LAUNCH", systemImage: "sparkles") { model.play() }
                     howToPlay
-                    if model.best > 0 { bestBadge }
+                    lessonButton
+                    modeBadge
                 }
                 Spacer()
                 HStack(spacing: 16) {
                     GlassIconButton(systemName: model.soundEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill",
                                     label: model.soundEnabled ? "Mute" : "Unmute") {
                         model.soundEnabled.toggle()
+                    }
+                    GlassIconButton(systemName: "trophy.fill", label: "Leaderboard") {
+                        model.showLeaderboard()
                     }
                     GlassIconButton(systemName: "slider.horizontal.3", label: "Settings") {
                         model.showSettings = true
@@ -85,15 +89,46 @@ struct MenuView: View {
         }
     }
 
-    private var bestBadge: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "star.fill")
-                .foregroundStyle(Color.spaceGold)
-            Text("BEST \(model.best)")
-                .font(.display(14, .bold))
-                .monospacedDigit()
-                .foregroundStyle(.white)
+    private var lessonButton: some View {
+        Button { model.startLesson() } label: {
+            Label("LEARN TO FLY", systemImage: "graduationcap.fill")
+                .font(.display(12, .heavy))
+                .tracking(1.5)
+                .foregroundStyle(.white.opacity(0.85))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(.white.opacity(0.07), in: Capsule())
+                .overlay(Capsule().strokeBorder(.white.opacity(0.18), lineWidth: 1))
+                .contentShape(Capsule())
         }
+        .buttonStyle(PressableButtonStyle())
+    }
+
+    private var modeBadge: some View {
+        HStack(spacing: 10) {
+            Text(model.difficulty.badge)
+                .font(.display(13, .heavy))
+                .tracking(2)
+                .foregroundStyle(Color.spaceCyan)
+            if model.best > 0 {
+                Rectangle().fill(.white.opacity(0.2)).frame(width: 1, height: 16)
+                Image(systemName: "star.fill")
+                    .foregroundStyle(Color.spaceGold)
+                Text("BEST \(model.best)")
+                    .font(.display(14, .bold))
+                    .monospacedDigit()
+                    .foregroundStyle(.white)
+            }
+            if model.bestCombo > 1 {
+                Rectangle().fill(.white.opacity(0.2)).frame(width: 1, height: 16)
+                Text("×\(model.bestCombo)")
+                    .font(.display(14, .heavy))
+                    .monospacedDigit()
+                    .foregroundStyle(Color.spaceGold)
+                    .accessibilityLabel("best combo \(model.bestCombo)")
+            }
+        }
+        .accessibilityElement(children: .combine)
         .padding(.horizontal, 16)
         .padding(.vertical, 9)
         .background(.white.opacity(0.07), in: Capsule())

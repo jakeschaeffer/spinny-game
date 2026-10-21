@@ -4,7 +4,7 @@ import AVFoundation
 /// player nodes feeding a hall reverb for a bit of space.
 final class SoundEngine {
     enum Sound: Hashable {
-        case hook, launch, combo(Int), death, newBest, tap
+        case hook, launch, combo(Int), death, newBest, tap, warning
     }
 
     private static let sampleRate = 44_100.0
@@ -42,7 +42,7 @@ final class SoundEngine {
         let format = format
         DispatchQueue.global(qos: .userInitiated).async {
             var rendered: [Sound: AVAudioPCMBuffer] = [:]
-            var sounds: [Sound] = [.hook, .launch, .death, .newBest, .tap]
+            var sounds: [Sound] = [.hook, .launch, .death, .newBest, .tap, .warning]
             sounds += (2...SoundEngine.maxComboSound).map(Sound.combo)
             for sound in sounds {
                 rendered[sound] = SoundEngine.buffer(SoundEngine.samples(for: sound), format: format)
@@ -104,6 +104,12 @@ final class SoundEngine {
                        offsets: notes.indices.map { Double($0) * 0.075 })
         case .tap:
             return tone(0.06, .sine, frequency: { _ in 1800 }, amplitude: envelope(0.12, attack: 0.001, decay: 0.015))
+        case .warning:
+            // Two quick falling blips: a nudge to act, not the death thud.
+            let blip = { (start: Double) in
+                tone(0.12, .triangle, frequency: { start - 900 * $0 }, amplitude: envelope(0.16, attack: 0.003, decay: 0.04))
+            }
+            return mix([blip(880), blip(660)], offsets: [0, 0.09])
         }
     }
 

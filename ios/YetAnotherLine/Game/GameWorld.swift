@@ -70,6 +70,8 @@ extension Physics {
 enum WorldEvent: Equatable {
     case hooked(planetID: Int, combo: Int)
     case launched(speed: CGFloat)
+    /// Flew into a wall with Easy's wall grace to spare: latch on in time and the run goes on.
+    case wallHit
     case died(DeathCause)
 }
 
@@ -103,6 +105,8 @@ struct GameWorld {
         static let fallMargin: CGFloat = 80
         static let radiusRange: ClosedRange<CGFloat> = 13...32
         static let rowGap: ClosedRange<CGFloat> = 72...108
+        /// Height at which the rows reach full density (score 500). See `Rules.rowSpacing(at:)`.
+        static let fullDensityHeight: CGFloat = 500 * unitsPerPoint
         /// Gap (beyond both radii) that spawning tries to keep between neighbouring planets.
         static let preferredClearance: CGFloat = 48
         /// Planets reaching below this height stay out of the straight-up launch path.
@@ -113,6 +117,7 @@ struct GameWorld {
 
     var viewHeight: CGFloat
     var physics: Physics
+    let rules: Rules
     var spawnsPlanets = true
     /// How fast world time runs relative to real time (the game speed setting). Only used to keep the
     /// regrab window in real time.
@@ -134,16 +139,20 @@ struct GameWorld {
     private(set) var lastHookTime: TimeInterval = -.infinity
     private(set) var maxAltitude: CGFloat = 0
     private(set) var deathCause: DeathCause?
-    /// Real seconds left to grab again after an out-of-bounds release; bounds are forgiven meanwhile.
+    /// Real seconds left to grab again after an out-of-bounds release (or, in Easy, a wall hit);
+    /// bounds are forgiven meanwhile.
     private(set) var regrabRemaining: TimeInterval?
+    /// Whether this flight has used its wall grace. Latching onto a planet earns it back.
+    private var wallGraceSpent = false
 
     private var rng: SplitMix64
     private var nextRowY: CGFloat = 90
     private var nextID = 1
 
-    init(viewHeight: CGFloat, seed: UInt64, physics: Physics = Physics()) {
+    init(viewHeight: CGFloat, seed: UInt64, physics: Physics = Physics(), rules: Rules = Rules()) {
         self.viewHeight = viewHeight
         self.physics = physics
+        self.rules = rules
         rng = SplitMix64(seed: seed)
         player = CGPoint(x: Tuning.width / 2, y: 0)
         velocity = CGVector(dx: 0, dy: Tuning.startSpeed)
@@ -153,9 +162,10 @@ struct GameWorld {
 
     /// A hand-built world for tests: fixed planets, nothing spawns, and the grace period can be skipped.
     init(viewHeight: CGFloat, player: CGPoint, velocity: CGVector, planets: [Planet],
-         physics: Physics = Physics(gravity: 0), skipGrace: Bool = true) {
+         physics: Physics = Physics(gravity: 0), rules: Rules = Rules(), skipGrace: Bool = true) {
         self.viewHeight = viewHeight
         self.physics = physics
+        self.rules = rules
         rng = SplitMix64(seed: 0)
         self.player = player
         self.velocity = velocity
@@ -207,6 +217,7 @@ struct GameWorld {
         let dy = player.y - target.position.y
         hookedID = target.id
         regrabRemaining = nil
+        wallGraceSpent = false
         hookAngle = atan2(dy, dx)
         hookDistance = hypot(dx, dy)
         // Keep spinning the way the player was already travelling around the planet.
@@ -228,9 +239,14 @@ struct GameWorld {
         }
         hookedID = nil
         // Letting go past a wall (or below the screen) isn't fatal straight away: there's a short
-        // window to grab again.
-        if boundsViolation() != nil, physics.regrabWindow > 0 {
-            regrabRemaining = physics.regrabWindow
+        // window to grab again. Easy's wall grace covers a release past a wall too, and is spent by it.
+        var events: [WorldEvent] = []
+        if let violation = boundsViolation() {
+            let wallGrace = violation == .wall && rules.wallGrace > 0 && !wallGraceSpent
+            let window = wallGrace ? max(physics.regrabWindow, rules.wallGrace) : physics.regrabWindow
+            if window > 0 { regrabRemaining = window }
+            if wallGrace { events.append(.wallHit) }
+            wallGraceSpent = true
         }
         // Fling: carry the swing's speed off the planet, never slower than a standard launch and
         // capped so a huge orbit can't fire you across the screen.
@@ -240,7 +256,7 @@ struct GameWorld {
         let launch = (fling + comboBonus) * physics.launchPower
         let angle = hookAngle + spinDirection * .pi / 2
         velocity = CGVector(dx: cos(angle) * launch, dy: sin(angle) * launch)
-        return [.launched(speed: launch)]
+        return [.launched(speed: launch)] + events
     }
 
     // MARK: Simulation
@@ -266,15 +282,22 @@ struct GameWorld {
             regrabRemaining = left > 0 ? left : nil
         }
 
+        var events: [WorldEvent] = []
         if let cause = collision() {
-            deathCause = cause
-            return [.died(cause)]
+            if cause == .wall, rules.wallGrace > 0, !wallGraceSpent {
+                wallGraceSpent = true
+                regrabRemaining = rules.wallGrace
+                events.append(.wallHit)
+            } else {
+                deathCause = cause
+                return [.died(cause)]
+            }
         }
         maxAltitude = max(maxAltitude, player.y)
         followCamera(dt)
         spawnAhead()
         cullBehind()
-        return []
+        return events
     }
 
     private func collision() -> DeathCause? {
@@ -315,12 +338,12 @@ struct GameWorld {
         guard spawnsPlanets else { return }
         while nextRowY < cameraBottom + viewHeight + 420 {
             spawnPlanet(nearY: nextRowY)
-            nextRowY += CGFloat.random(in: Tuning.rowGap, using: &rng)
+            nextRowY += CGFloat.random(in: Tuning.rowGap, using: &rng) * rules.rowSpacing(at: nextRowY)
         }
     }
 
     private mutating func spawnPlanet(nearY rowY: CGFloat) {
-        let radius = CGFloat.random(in: Tuning.radiusRange, using: &rng)
+        let radius = CGFloat.random(in: rules.radiusRange, using: &rng)
         var chosen = CGPoint(x: Tuning.width / 2, y: rowY)
         var bestClearance = -CGFloat.infinity
         for _ in 0..<16 {

@@ -271,8 +271,10 @@
 				DEVELOPMENT_TEAM = 3BGFWC629H;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				CODE_SIGN_ENTITLEMENTS = YetAnotherLine.entitlements;
 				INFOPLIST_FILE = "YetAnotherLine-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Yet Another Line";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Saves the picture of your line to your photo library.";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.arcade-games";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -303,8 +305,10 @@
 				DEVELOPMENT_TEAM = 3BGFWC629H;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				CODE_SIGN_ENTITLEMENTS = YetAnotherLine.entitlements;
 				INFOPLIST_FILE = "YetAnotherLine-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Yet Another Line";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Saves the picture of your line to your photo library.";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.arcade-games";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

@@ -16,14 +16,19 @@ final class GameScene: SKScene {
     weak var model: GameModel?
     var feedback: Feedback?
     var speedMultiplier: CGFloat = 1 {
-        didSet { world.timeScale = Double(speedMultiplier) }
+        didSet { world.timeScale = Double(runSpeed) }
     }
     var showsOrbitGuide = true
+    var tracesPath = true {
+        didSet { traceNode.isHidden = !tracesPath }
+    }
     var physics = Physics() {
         didSet { world.physics = physics }
     }
 
     private(set) var mode: Mode = .attract
+    /// Whether the run is the learning mode: no best scores, a finish line, and the orbit guide always on.
+    private(set) var isLesson = false
     private(set) var world: GameWorld
     private var isGamePaused = false
     private var lastUpdateTime: TimeInterval?
@@ -39,6 +44,11 @@ final class GameScene: SKScene {
     private var guideTargetID: Int?
     private var demoRestartAt: TimeInterval?
     private var planetSignature = [-1, -1, -1]
+    private var trace = Trace()
+    private var shownEggs = Set<EasterEgg>()
+    /// The camera has pulled back to show the whole trace and no longer follows the world.
+    private var isFramingTrace = false
+    private var framedRect: CGRect?
 
     private let cam = SKCameraNode()
     /// Camera child in world units: things pinned to the screen (background, walls, flashes, banners).
@@ -46,12 +56,15 @@ final class GameScene: SKScene {
     private let backdrop = Backdrop()
     private let walls = WallsNode()
     private let flash = SKSpriteNode(color: .white, size: .zero)
+    /// Easter eggs pass in the far distance: pinned to the screen, behind everything in the world.
+    private let eggLayer = SKNode()
     private let worldLayer = SKNode()
     private let markerLayer = SKNode()
     private let planetLayer = SKNode()
     private let guideRing = SKShapeNode()
     private let tether = TetherNode()
     private let trail = TrailNode()
+    private let traceNode = TraceNode()
     private let player = PlayerNode()
     private var planetNodes: [Int: PlanetNode] = [:]
     private var markerNodes: [Int: SKNode] = [:]
@@ -60,11 +73,16 @@ final class GameScene: SKScene {
     private var unit: CGFloat = 1
     /// Height of the view in world units.
     private var visibleHeight: CGFloat { size.height / unit }
+    /// How fast a live run plays: the game speed setting times the mode's own speed.
+    private var runSpeed: CGFloat { speedMultiplier * CGFloat(world.rules.speed) }
 
     #if DEBUG
     private let debugAutopilot = ProcessInfo.processInfo.arguments.contains("-autopilot")
+    /// `-eggs` shows the easter eggs at a tenth of their heights, to check them quickly.
+    private let eggHeightScale = ProcessInfo.processInfo.arguments.contains("-eggs") ? 10 : 1
     #else
     private let debugAutopilot = false
+    private let eggHeightScale = 1
     #endif
 
     override init(size: CGSize) {
@@ -89,16 +107,18 @@ final class GameScene: SKScene {
         flash.zPosition = 90
         flash.alpha = 0
         flash.blendMode = .add
-        for node in [backdrop, walls, flash] { screenLayer.addChild(node) }
+        eggLayer.zPosition = -50
+        for node in [backdrop, eggLayer, walls, flash] { screenLayer.addChild(node) }
 
         addChild(worldLayer)
         markerLayer.zPosition = 1
         guideRing.zPosition = 4
         planetLayer.zPosition = 10
+        traceNode.zPosition = 14
         trail.zPosition = 15
         tether.zPosition = 18
         player.zPosition = 20
-        for node in [markerLayer, guideRing, planetLayer, trail, tether, player] { worldLayer.addChild(node) }
+        for node in [markerLayer, guideRing, planetLayer, traceNode, trail, tether, player] { worldLayer.addChild(node) }
         player.tail.targetNode = worldLayer
 
         guideRing.lineWidth = 1.4
@@ -132,13 +152,28 @@ final class GameScene: SKScene {
 
     func showAttract() {
         mode = .attract
+        isLesson = false
         beginRun()
     }
 
-    func startGame() {
+    func startGame(rules: Rules) {
         mode = .playing
-        beginRun()
+        isLesson = false
+        beginRun(rules: rules)
         feedback?.prepare()
+    }
+
+    func startLesson(rules: Rules) {
+        mode = .playing
+        isLesson = true
+        beginRun(rules: rules)
+        feedback?.prepare()
+    }
+
+    /// The lesson is passed: the autopilot takes over and flies on behind the results card.
+    func finishLesson() {
+        touchesDown.removeAll()
+        mode = .attract
     }
 
     func setGamePaused(_ paused: Bool) {
@@ -148,12 +183,12 @@ final class GameScene: SKScene {
         lastUpdateTime = nil
     }
 
-    private func beginRun() {
+    private func beginRun(rules: Rules = Rules()) {
         isGamePaused = false
         isPaused = false
         removeAction(forKey: "gameOver")
-        world = GameWorld(viewHeight: visibleHeight, seed: .random(in: 0...UInt64.max), physics: physics)
-        world.timeScale = Double(speedMultiplier)
+        world = GameWorld(viewHeight: visibleHeight, seed: .random(in: 0...UInt64.max), physics: physics, rules: rules)
+        world.timeScale = Double(runSpeed)
         touchesDown.removeAll()
         clock = 0
         reportedScore = -1
@@ -170,13 +205,31 @@ final class GameScene: SKScene {
         markerNodes.removeAll()
         bestLine?.removeFromParent()
         bestLine = nil
-        bestToBeat = model?.best ?? 0
-        if mode == .playing, bestToBeat > 0 {
+        bestToBeat = isLesson ? 0 : model?.best ?? 0
+        if mode == .playing, isLesson {
+            let line = makeLine(y: CGFloat(Lesson.goal) * GameWorld.Tuning.unitsPerPoint, label: "FINISH \(Lesson.goal)",
+                                color: Theme.cyan, alpha: 0.6, alignRight: true)
+            markerLayer.addChild(line)
+            bestLine = line
+        } else if mode == .playing, bestToBeat > 0 {
             let line = makeLine(y: CGFloat(bestToBeat) * GameWorld.Tuning.unitsPerPoint, label: "BEST \(bestToBeat)",
                                 color: Theme.gold, alpha: 0.55, alignRight: true)
             markerLayer.addChild(line)
             bestLine = line
         }
+
+        cam.removeAction(forKey: "frameTrace")
+        cam.setScale(1)
+        isFramingTrace = false
+        framedRect = nil
+        for node in [planetLayer, markerLayer, walls] {
+            node.removeAllActions()
+            node.alpha = 1
+        }
+        trace = Trace()
+        traceNode.reset()
+        shownEggs.removeAll()
+        eggLayer.removeAllChildren()
 
         guideRing.isHidden = true
         tether.hide()
@@ -238,7 +291,7 @@ final class GameScene: SKScene {
                 advance(by: dt, autopilot: true)
             }
         case .playing:
-            advance(by: dt * speedMultiplier, autopilot: debugAutopilot)
+            advance(by: dt * runSpeed, autopilot: debugAutopilot)
         case .dying, .gameOver:
             clock += dt
         }
@@ -262,7 +315,42 @@ final class GameScene: SKScene {
             handle(world.step(h))
             if world.isDead { break }
         }
-        if !world.isDead { trail.add(world.player, at: clock) }
+        if !world.isDead {
+            trail.add(world.player, at: clock)
+            if mode == .playing { recordTrace(world.player) }
+        }
+    }
+
+    private func recordTrace(_ point: CGPoint) {
+        let count = trace.points.count
+        trace.add(point)
+        if trace.points.count > count { traceNode.add(point) }
+    }
+
+    /// The run's whole line, or nil when Trace path is off or there's nothing to show.
+    var finishedTrace: Trace? {
+        tracesPath && !isLesson && trace.points.count > 1 ? trace : nil
+    }
+
+    /// Pulls the camera back so the run's whole line fills `rect`, in view points from the top left.
+    func frameTrace(in rect: CGRect) {
+        guard mode == .gameOver, finishedTrace != nil, rect.width > 20, rect.height > 20, rect != framedRect else { return }
+        framedRect = rect
+        let bounds = trace.bounds.insetBy(dx: -8, dy: -16)
+        let scale = max(bounds.width * unit / rect.width, bounds.height * unit / rect.height, 1)
+        // How far the rect's centre sits from the screen's, in scene orientation (y up).
+        let offset = CGPoint(x: rect.midX - size.width / 2, y: size.height / 2 - rect.midY)
+        let target = CGPoint(x: bounds.midX * unit - offset.x * scale, y: bounds.midY * unit - offset.y * scale)
+
+        isFramingTrace = true
+        shakeRemaining = 0
+        let duration = UIAccessibility.isReduceMotionEnabled ? 0.01 : 1.1
+        let pullBack = SKAction.group([.scale(to: scale, duration: duration), .move(to: target, duration: duration)])
+        pullBack.timingMode = .easeInEaseOut
+        cam.run(pullBack, withKey: "frameTrace")
+        // About 2.5 points wide on screen, whatever the zoom.
+        traceNode.reveal(lineWidth: 2.5 * scale / unit, duration: duration)
+        for node in [planetLayer, markerLayer, walls] { node.run(.fadeOut(withDuration: duration * 0.5)) }
     }
 
     private func handle(_ events: [WorldEvent]) {
@@ -270,18 +358,30 @@ final class GameScene: SKScene {
         for event in events {
             switch event {
             case let .hooked(planetID, combo):
-                if live { feedback?.hooked(combo: combo) }
+                if live {
+                    feedback?.hooked(combo: combo)
+                    model?.playerHooked()
+                }
                 if let node = planetNodes[planetID] {
+                    if live { trace.latch(node.planet) }
                     node.pulse()
                     let palette = Theme.planetPalettes[node.planet.palette]
                     tether.showTrack(around: node.planet.position, radius: world.hookDistance, color: palette.light)
                     if live, combo > 1 { popup("×\(combo)", at: world.player) }
                 }
             case .launched:
-                if live { feedback?.launched() }
+                if live {
+                    feedback?.launched()
+                    model?.playerLaunched()
+                }
                 tether.hide()
-            case .died:
-                explode()
+            case .wallHit:
+                guard live else { break }
+                feedback?.wallHit()
+                let x = min(max(world.player.x, 100), GameWorld.Tuning.width - 100)
+                popup("LATCH ON!", at: CGPoint(x: x, y: world.player.y), color: Theme.danger)
+            case let .died(cause):
+                explode(cause)
             }
         }
     }
@@ -302,6 +402,7 @@ final class GameScene: SKScene {
     }
 
     private func updateCamera(_ dt: TimeInterval) {
+        guard !isFramingTrace else { return }
         var offset = CGPoint.zero
         if shakeRemaining > 0 {
             shakeRemaining = max(0, shakeRemaining - dt)
@@ -340,7 +441,7 @@ final class GameScene: SKScene {
             highlightedID = highlight?.id
         }
 
-        guard showsOrbitGuide, let target = nearest else {
+        guard showsOrbitGuide || isLesson, let target = nearest else {
             guideRing.isHidden = true
             guideTargetID = nil
             return
@@ -418,6 +519,13 @@ final class GameScene: SKScene {
                 model?.reachedNewBest()
                 banner("NEW BEST")
             }
+            if !isLesson {
+                let visible = CGSize(width: GameWorld.Tuning.width, height: visibleHeight)
+                for egg in EasterEgg.due(at: score * eggHeightScale, shown: shownEggs) {
+                    shownEggs.insert(egg)
+                    eggLayer.addChild(egg.makeNode(visible: visible))
+                }
+            }
         }
         let combo = world.liveCombo
         if combo != reportedCombo {
@@ -428,7 +536,7 @@ final class GameScene: SKScene {
 
     // MARK: Effects
 
-    private func explode() {
+    private func explode(_ cause: DeathCause) {
         let point = world.player
         player.explode()
         tether.hide()
@@ -453,11 +561,17 @@ final class GameScene: SKScene {
             flash.alpha = 0.3
             flash.run(.fadeOut(withDuration: 0.3))
             let summary = (score: world.score, bestCombo: world.bestCombo, duration: world.time)
+            let isLesson = isLesson
             run(.sequence([
                 .wait(forDuration: 0.9),
                 .run { [weak self] in
                     self?.mode = .gameOver
-                    self?.model?.runEnded(score: summary.score, bestCombo: summary.bestCombo, duration: summary.duration)
+                    if isLesson {
+                        self?.model?.lessonCrashed(cause)
+                    } else {
+                        self?.model?.runEnded(score: summary.score, bestCombo: summary.bestCombo, duration: summary.duration,
+                                              trace: self?.finishedTrace)
+                    }
                 },
             ]), withKey: "gameOver")
         case .attract:
@@ -467,11 +581,11 @@ final class GameScene: SKScene {
         }
     }
 
-    private func popup(_ text: String, at point: CGPoint) {
+    private func popup(_ text: String, at point: CGPoint, color: UIColor = Theme.gold) {
         let label = SKLabelNode(fontNamed: "AvenirNext-HeavyItalic")
         label.text = text
         label.fontSize = 22
-        label.fontColor = Theme.gold
+        label.fontColor = color
         label.position = CGPoint(x: point.x, y: point.y + 22)
         label.zPosition = 30
         label.setScale(0.6)
