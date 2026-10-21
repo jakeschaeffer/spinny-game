@@ -11,6 +11,7 @@ Feedback from Oct 21, 2026, split into tickets. Each lands as its own commit on 
 | 5 | Game Center leaderboard | Done (needs App Store Connect setup) |
 | 6 | Path trace toggle | Done |
 | 7 | Height easter eggs | Done |
+| 8 | Bumpers, and a longer lesson | Done |
 
 ## 1. Ramp up the planet count
 
@@ -67,3 +68,14 @@ Decorative sights at set heights, with no hitbox, once per run:
 - 2000: a meteor shower
 
 They pass in the far distance, pinned to the screen and behind the planets. Lessons don't show them. To check them quickly, launch a Debug build with `-autopilot -eggs`: `-eggs` shows each one at a tenth of its height.
+
+## 8. Bumpers, and a longer lesson
+
+Follow-up feedback from Oct 21, after 1.1 was submitted.
+
+- Bumpers: with them on, flying into a side wall bounces the comet straight back (mirrored) at 85% speed instead of ending the run. The slowdown lasts only until the next latch, since launch speed comes from the swing. Falling off the bottom still ends a run. Bumpered walls glow gold, never blush red, and flare with a soft "boink" on each bounce.
+- Why a mirror bounce rather than a near-vertical kick: a kick upward adds climbing energy, so an idle comet could ping-pong between the walls and climb forever.
+- Easy has bumpers on by default, with a "Bumpers in Easy" switch in Settings. With them off, Easy keeps its 300 ms wall grace. Astro never has bumpers.
+- The lesson has its own bumper switch (on by default): a BUMPERS ON/OFF pill under the pause button, which applies mid-lesson. The walls tip explains bumpers when they're on, and a wall crash with them off offers "Try with bumpers".
+- The lesson now finishes at 150 instead of 100.
+

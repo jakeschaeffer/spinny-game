@@ -120,4 +120,43 @@ final class GameModelTests: XCTestCase {
         XCTAssertNotNil(model.lesson)
         XCTAssertEqual(model.phase, .playing)
     }
+
+    // MARK: Bumpers
+
+    func testEasyHasBumpersByDefaultAndAstroNeverDoes() {
+        let model = GameModel(defaults: defaults)
+        XCTAssertTrue(model.easyBumpers)
+        model.difficulty = .easy
+        model.play()
+        XCTAssertTrue(model.scene.bumpers)
+        model.difficulty = .astro
+        model.play()
+        XCTAssertFalse(model.scene.bumpers, "Easy's switch doesn't reach Astro")
+    }
+
+    func testTheLessonHasItsOwnBumperSwitchThatAppliesMidRun() {
+        let model = GameModel(defaults: defaults)
+        model.easyBumpers = false
+        model.startLesson()
+        XCTAssertTrue(model.scene.bumpers, "on by default in the lesson")
+        model.lessonBumpers = false
+        XCTAssertFalse(model.scene.bumpers, "switching mid-lesson applies straight away")
+    }
+
+    func testBumperSwitchesAreRemembered() {
+        let model = GameModel(defaults: defaults)
+        model.easyBumpers = false
+        model.lessonBumpers = false
+        let reloaded = GameModel(defaults: defaults)
+        XCTAssertFalse(reloaded.easyBumpers)
+        XCTAssertFalse(reloaded.lessonBumpers)
+    }
+
+    func testTheMenuDemoNeverHasBumpers() {
+        let model = GameModel(defaults: defaults)
+        model.difficulty = .easy
+        model.play()
+        model.goToMenu()
+        XCTAssertFalse(model.scene.bumpers)
+    }
 }

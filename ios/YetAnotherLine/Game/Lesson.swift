@@ -24,7 +24,7 @@ struct Lesson: Equatable {
         case passed
     }
 
-    static let goal = 100
+    static let goal = 150
     /// Half speed, with fewer and bigger planets than either mode.
     static let rules = Rules(startSpacing: 2.2, fullSpacing: 2.2, speed: 0.5, radiusRange: 20...32)
 

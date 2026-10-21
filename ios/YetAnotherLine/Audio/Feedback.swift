@@ -38,6 +38,11 @@ final class Feedback {
         haptic { soft.impactOccurred(intensity: 0.7) }
     }
 
+    func bumped() {
+        play(.bump)
+        haptic { light.impactOccurred(intensity: 0.8) }
+    }
+
     /// A wall hit that Easy still forgives if you latch on quickly.
     func wallHit() {
         play(.warning)

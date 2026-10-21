@@ -16,7 +16,10 @@ struct HUDView: View {
                 }
                 .allowsHitTesting(false)
                 Spacer()
-                GlassIconButton(systemName: "pause.fill", label: "Pause") { model.pause() }
+                VStack(alignment: .trailing, spacing: 10) {
+                    GlassIconButton(systemName: "pause.fill", label: "Pause") { model.pause() }
+                    if model.lesson != nil { BumpersToggle(model: model) }
+                }
             }
             .padding(.horizontal, 22)
             .padding(.top, 6)
@@ -40,7 +43,7 @@ struct HUDView: View {
             // Low on the screen, behind the comet, so it never hides the planets ahead.
             ZStack {
                 if let lesson = model.lesson {
-                    LessonCoachCard(step: lesson.step, score: model.score)
+                    LessonCoachCard(step: lesson.step, score: model.score, bumpers: model.lessonBumpers)
                         .id(lesson.step)
                         .transition(.opacity.combined(with: .move(edge: .bottom)))
                 } else if model.showTutorial {
@@ -93,16 +96,40 @@ private struct ComboBadge: View {
 }
 
 /// The learning mode's current tip, low on the screen like the tutorial card.
+/// The lesson's bumper switch, small enough to sit under the pause button.
+private struct BumpersToggle: View {
+    let model: GameModel
+
+    var body: some View {
+        let on = model.lessonBumpers
+        Button { model.lessonBumpers.toggle() } label: {
+            Label(on ? "BUMPERS ON" : "BUMPERS OFF", systemImage: on ? "shield.fill" : "shield.slash")
+                .font(.display(10, .heavy))
+                .tracking(1)
+                .foregroundStyle(on ? Color(white: 0.08) : .white.opacity(0.85))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(on ? AnyShapeStyle(Color.spaceGold) : AnyShapeStyle(.white.opacity(0.1)), in: Capsule())
+                .overlay(Capsule().strokeBorder(.white.opacity(on ? 0 : 0.2), lineWidth: 1))
+                .contentShape(Capsule())
+        }
+        .buttonStyle(PressableButtonStyle())
+        .accessibilityLabel("Bumpers")
+        .accessibilityValue(on ? "On" : "Off")
+    }
+}
+
 private struct LessonCoachCard: View {
     let step: Lesson.Step
     let score: Int
+    let bumpers: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 12) {
                 Image(systemName: tip.icon)
                     .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(step == .walls ? Color(uiColor: Theme.danger) : .spaceCyan)
+                    .foregroundStyle(step != .walls ? .spaceCyan : bumpers ? .spaceGold : Color(uiColor: Theme.danger))
                     .frame(width: 26)
                 Text(tip.title)
                     .font(.display(17, .black))
@@ -141,6 +168,9 @@ private struct LessonCoachCard: View {
             ("arrow.up.forward", "LET GO TO LAUNCH", "You fly off the way you're moving, so let go while you're heading up.")
         case .chain:
             ("point.3.connected.trianglepath.dotted", "LATCH THE NEXT ONE", "Grab another planet before you fall. Quick latches build a combo.")
+        case .walls where bumpers:
+            ("shield.fill", "BUMPERS ARE ON",
+             "The side walls bounce you back while you learn. In a real run, flying into one ends it. Swinging through one while latched is always safe.")
         case .walls:
             ("exclamationmark.triangle.fill", "MIND THE WALLS",
              "Flying into a side wall ends your run. Swinging through one while you're latched is safe.")

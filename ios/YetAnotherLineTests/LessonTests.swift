@@ -16,8 +16,8 @@ final class LessonTests: XCTestCase {
         XCTAssertEqual(lesson.step, .walls)
         lesson.stepTimedOut(.walls)
         XCTAssertEqual(lesson.step, .climb)
-        XCTAssertFalse(lesson.isPassed(score: 99))
-        XCTAssertTrue(lesson.isPassed(score: 100))
+        XCTAssertFalse(lesson.isPassed(score: 149))
+        XCTAssertTrue(lesson.isPassed(score: 150))
     }
 
     func testLettingGoDuringTheSwingTipSkipsTheLaunchTip() {
@@ -31,7 +31,7 @@ final class LessonTests: XCTestCase {
         var lesson = Lesson()
         lesson.hooked()
         lesson.launched()
-        XCTAssertFalse(lesson.isPassed(score: 150), "the wall warning hasn't been shown yet")
+        XCTAssertFalse(lesson.isPassed(score: 200), "the wall warning hasn't been shown yet")
     }
 
     func testAStaleTimerDoesNothing() {
