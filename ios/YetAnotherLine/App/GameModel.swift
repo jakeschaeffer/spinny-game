@@ -35,6 +35,8 @@ final class GameModel {
     private(set) var lesson: Lesson?
     private(set) var lessonOutcome: Lesson.Outcome?
     var showSettings = false
+    /// Set when the leaderboard button is tapped while signed out of Game Center.
+    var showGameCenterSignIn = false
 
     var soundEnabled: Bool {
         didSet {
@@ -72,6 +74,7 @@ final class GameModel {
 
     let scene: GameScene
     let feedback = Feedback()
+    let gameCenter = GameCenter()
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private var tutorialTask: Task<Void, Never>?
     @ObservationIgnored private var lessonTask: Task<Void, Never>?
@@ -119,6 +122,7 @@ final class GameModel {
         scene.physics = physics
         scene.speedMultiplier = CGFloat(gameSpeed)
         scene.showAttract()
+        gameCenter.pendingBests = { [weak self] in self?.bests ?? [:] }
     }
 
     /// The mode the screen is about: the one picked on the menu, otherwise the current run's.
@@ -208,6 +212,15 @@ final class GameModel {
         scene.showAttract()
     }
 
+    func showLeaderboard() {
+        feedback.tap()
+        if gameCenter.isAuthenticated {
+            gameCenter.showLeaderboard(for: shownDifficulty)
+        } else {
+            showGameCenterSignIn = true
+        }
+    }
+
     func resetBests() {
         for difficulty in Difficulty.allCases {
             bests[difficulty] = 0
@@ -259,6 +272,7 @@ final class GameModel {
         }
         lastRun = RunSummary(score: score, bestCombo: bestCombo, duration: duration, isNewBest: isNewBest,
                              isNewBestCombo: isNewBestCombo)
+        gameCenter.submit(best: bests[runDifficulty] ?? 0, for: runDifficulty)
         combo = 0
         tutorialTask?.cancel()
         showTutorial = false

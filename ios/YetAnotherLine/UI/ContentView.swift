@@ -36,6 +36,12 @@ struct ContentView: View {
         .sheet(isPresented: $model.showSettings) {
             SettingsView(model: model)
         }
+        .alert("Sign in to Game Center", isPresented: $model.showGameCenterSignIn) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Open Settings › Game Center and sign in with your Apple Account to see the leaderboards and post your scores.")
+        }
+        .task { model.gameCenter.authenticate() }
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         .preferredColorScheme(.dark)

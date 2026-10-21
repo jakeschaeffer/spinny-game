@@ -28,6 +28,9 @@ struct MenuView: View {
                                     label: model.soundEnabled ? "Mute" : "Unmute") {
                         model.soundEnabled.toggle()
                     }
+                    GlassIconButton(systemName: "trophy.fill", label: "Leaderboard") {
+                        model.showLeaderboard()
+                    }
                     GlassIconButton(systemName: "slider.horizontal.3", label: "Settings") {
                         model.showSettings = true
                     }

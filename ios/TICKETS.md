@@ -8,8 +8,8 @@ Feedback from Oct 21, 2026, split into tickets. Each lands as its own commit on 
 | 2 | Easy and Astro (Hard) modes, each with its own scores | Done |
 | 3 | Track best combo | Done |
 | 4 | Learning mode | Done |
-| 5 | Game Center leaderboard | In progress |
-| 6 | Path trace toggle | To do |
+| 5 | Game Center leaderboard | Done (needs App Store Connect setup) |
+| 6 | Path trace toggle | In progress |
 | 7 | Height easter eggs | To do |
 
 ## 1. Ramp up the planet count
@@ -46,7 +46,8 @@ A mode picker in Settings: "Easy" and "Astro (Hard)". Astro is today's game.
 
 - Sign in to Game Center at launch and submit each finished run to its mode's leaderboard.
 - A leaderboard button on the menu and the game-over card opens the mode's leaderboard. If you're not signed in, it says how to sign in.
-- Leaderboards have to exist in App Store Connect before scores show up (IDs below). The release guide covers that setup.
+- Leaderboards have to exist in App Store Connect before scores show up. `RELEASING.md` has the IDs and the setup steps.
+- Verified in the simulator: sign-in is attempted at launch, and the signed-out prompt works. Posting scores and opening the leaderboard need a phone signed in to Game Center and the leaderboards created in App Store Connect.
 
 ## 6. Path trace toggle
 
