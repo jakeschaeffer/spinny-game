@@ -19,7 +19,7 @@ How to ship an update to the App Store, and what went wrong or worked well last 
 | Version | Build | Notes |
 |---|---|---|
 | 1.0 | 1–2 | First release. |
-| 1.0.1 | 3 | Glass icon buttons (pause, menu sound/settings) tappable across the whole circle. Submitted Oct 20, 2026. |
+| 1.0.1 | 3 | Glass icon buttons (pause, menu sound/settings) tappable across the whole circle. Submitted Oct 20, 2026; approved by Oct 21. |
 
 Add a row each time you ship.
 
@@ -88,7 +88,9 @@ You can withdraw a submission from Distribution → App Review until review star
 
 The app submits each mode's best score to its own leaderboard. The leaderboards have to exist in App Store Connect, and the first version that uses them has to ship them, or scores go nowhere.
 
-1. In App Store Connect, open the app's Game Center section and add two **classic** leaderboards:
+**Status:** step 1 was done on Oct 21, 2026. Both leaderboards exist (Prepare for Submission), each with an English (U.S.) localization and " point"/" points" suffixes, and Astro is first and the default. Steps 2 and 3 are still to do.
+
+1. In App Store Connect, open Distribution → Game Center (under Growth & Marketing) and add two **classic** leaderboards:
 
    | Reference name | Leaderboard ID | Display name |
    |---|---|---|
@@ -96,7 +98,7 @@ The app submits each mode's best score to its own leaderboard. The leaderboards 
    | Astro high score | `com.jakeschaeffer.onemoreline.score.astro` | Astro (Hard) |
 
    Score format: Integer. Submission type: Best score. Sort order: High to low. Leaderboard IDs can never be reused, even after deletion, so copy them exactly.
-2. On the new version's page, turn on **Game Center** and add both leaderboards. They go live when that version is approved.
+2. On the new version's page, turn on **Game Center** and add both leaderboards. They go live when that version is approved. Don't use a leaderboard's own "Add for Review" button; they ride along with the version.
 3. To test before release, run a development or TestFlight build on a phone signed in to Game Center. Those builds use the Game Center sandbox, which only shows leaderboards that exist in App Store Connect.
 
 The simulator usually isn't signed in to Game Center; the leaderboard button then shows a "Sign in to Game Center" prompt instead.
