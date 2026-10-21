@@ -9,8 +9,8 @@ Feedback from Oct 21, 2026, split into tickets. Each lands as its own commit on 
 | 3 | Track best combo | Done |
 | 4 | Learning mode | Done |
 | 5 | Game Center leaderboard | Done (needs App Store Connect setup) |
-| 6 | Path trace toggle | In progress |
-| 7 | Height easter eggs | To do |
+| 6 | Path trace toggle | Done |
+| 7 | Height easter eggs | In progress |
 
 ## 1. Ramp up the planet count
 
@@ -53,8 +53,8 @@ A mode picker in Settings: "Easy" and "Astro (Hard)". Astro is today's game.
 
 - A "Trace path" toggle in Settings, on by default.
 - While it's on, the comet's whole path stays drawn as you play, instead of only the short fading tail.
-- When the run ends, the camera pulls back to show the whole path before the game-over card appears, and the card can be hidden to look at it again.
-- Tapping the shown trace opens the iPhone share sheet with an image of it (added Oct 21). Nothing extra on screen beyond a quiet hint.
+- When the run ends, the game-over card sits low and the camera pulls back to fit the whole path in the space above it.
+- Tapping the shown trace opens the iPhone share sheet with a 1080×1920 picture of it: the line on a starfield with the score, mode, and best combo (added Oct 21). The only extra UI is a quiet "Tap your line to share" hint.
 
 ## 7. Height easter eggs
 

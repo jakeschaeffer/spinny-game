@@ -19,6 +19,9 @@ final class GameScene: SKScene {
         didSet { world.timeScale = Double(runSpeed) }
     }
     var showsOrbitGuide = true
+    var tracesPath = true {
+        didSet { traceNode.isHidden = !tracesPath }
+    }
     var physics = Physics() {
         didSet { world.physics = physics }
     }
@@ -41,6 +44,10 @@ final class GameScene: SKScene {
     private var guideTargetID: Int?
     private var demoRestartAt: TimeInterval?
     private var planetSignature = [-1, -1, -1]
+    private var trace = Trace()
+    /// The camera has pulled back to show the whole trace and no longer follows the world.
+    private var isFramingTrace = false
+    private var framedRect: CGRect?
 
     private let cam = SKCameraNode()
     /// Camera child in world units: things pinned to the screen (background, walls, flashes, banners).
@@ -54,6 +61,7 @@ final class GameScene: SKScene {
     private let guideRing = SKShapeNode()
     private let tether = TetherNode()
     private let trail = TrailNode()
+    private let traceNode = TraceNode()
     private let player = PlayerNode()
     private var planetNodes: [Int: PlanetNode] = [:]
     private var markerNodes: [Int: SKNode] = [:]
@@ -99,10 +107,11 @@ final class GameScene: SKScene {
         markerLayer.zPosition = 1
         guideRing.zPosition = 4
         planetLayer.zPosition = 10
+        traceNode.zPosition = 14
         trail.zPosition = 15
         tether.zPosition = 18
         player.zPosition = 20
-        for node in [markerLayer, guideRing, planetLayer, trail, tether, player] { worldLayer.addChild(node) }
+        for node in [markerLayer, guideRing, planetLayer, traceNode, trail, tether, player] { worldLayer.addChild(node) }
         player.tail.targetNode = worldLayer
 
         guideRing.lineWidth = 1.4
@@ -202,6 +211,17 @@ final class GameScene: SKScene {
             bestLine = line
         }
 
+        cam.removeAction(forKey: "frameTrace")
+        cam.setScale(1)
+        isFramingTrace = false
+        framedRect = nil
+        for node in [planetLayer, markerLayer, walls] {
+            node.removeAllActions()
+            node.alpha = 1
+        }
+        trace = Trace()
+        traceNode.reset()
+
         guideRing.isHidden = true
         tether.hide()
         trail.reset()
@@ -286,7 +306,42 @@ final class GameScene: SKScene {
             handle(world.step(h))
             if world.isDead { break }
         }
-        if !world.isDead { trail.add(world.player, at: clock) }
+        if !world.isDead {
+            trail.add(world.player, at: clock)
+            if mode == .playing { recordTrace(world.player) }
+        }
+    }
+
+    private func recordTrace(_ point: CGPoint) {
+        let count = trace.points.count
+        trace.add(point)
+        if trace.points.count > count { traceNode.add(point) }
+    }
+
+    /// The run's whole line, or nil when Trace path is off or there's nothing to show.
+    var finishedTrace: Trace? {
+        tracesPath && !isLesson && trace.points.count > 1 ? trace : nil
+    }
+
+    /// Pulls the camera back so the run's whole line fills `rect`, in view points from the top left.
+    func frameTrace(in rect: CGRect) {
+        guard mode == .gameOver, finishedTrace != nil, rect.width > 20, rect.height > 20, rect != framedRect else { return }
+        framedRect = rect
+        let bounds = trace.bounds.insetBy(dx: -8, dy: -16)
+        let scale = max(bounds.width * unit / rect.width, bounds.height * unit / rect.height, 1)
+        // How far the rect's centre sits from the screen's, in scene orientation (y up).
+        let offset = CGPoint(x: rect.midX - size.width / 2, y: size.height / 2 - rect.midY)
+        let target = CGPoint(x: bounds.midX * unit - offset.x * scale, y: bounds.midY * unit - offset.y * scale)
+
+        isFramingTrace = true
+        shakeRemaining = 0
+        let duration = UIAccessibility.isReduceMotionEnabled ? 0.01 : 1.1
+        let pullBack = SKAction.group([.scale(to: scale, duration: duration), .move(to: target, duration: duration)])
+        pullBack.timingMode = .easeInEaseOut
+        cam.run(pullBack, withKey: "frameTrace")
+        // About 2.5 points wide on screen, whatever the zoom.
+        traceNode.reveal(lineWidth: 2.5 * scale / unit, duration: duration)
+        for node in [planetLayer, markerLayer, walls] { node.run(.fadeOut(withDuration: duration * 0.5)) }
     }
 
     private func handle(_ events: [WorldEvent]) {
@@ -299,6 +354,7 @@ final class GameScene: SKScene {
                     model?.playerHooked()
                 }
                 if let node = planetNodes[planetID] {
+                    if live { trace.latch(node.planet) }
                     node.pulse()
                     let palette = Theme.planetPalettes[node.planet.palette]
                     tether.showTrack(around: node.planet.position, radius: world.hookDistance, color: palette.light)
@@ -337,6 +393,7 @@ final class GameScene: SKScene {
     }
 
     private func updateCamera(_ dt: TimeInterval) {
+        guard !isFramingTrace else { return }
         var offset = CGPoint.zero
         if shakeRemaining > 0 {
             shakeRemaining = max(0, shakeRemaining - dt)
@@ -496,7 +553,8 @@ final class GameScene: SKScene {
                     if isLesson {
                         self?.model?.lessonCrashed(cause)
                     } else {
-                        self?.model?.runEnded(score: summary.score, bestCombo: summary.bestCombo, duration: summary.duration)
+                        self?.model?.runEnded(score: summary.score, bestCombo: summary.bestCombo, duration: summary.duration,
+                                              trace: self?.finishedTrace)
                     }
                 },
             ]), withKey: "gameOver")

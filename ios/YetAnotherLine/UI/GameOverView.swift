@@ -7,20 +7,33 @@ struct GameOverView: View {
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.45)
-                .ignoresSafeArea()
-
-            SpaceCard {
-                ZStack(alignment: .topTrailing) {
-                    results
-                    GlassIconButton(systemName: "trophy.fill", label: "Leaderboard") { model.showLeaderboard() }
-                        .offset(x: 14, y: -14)
+            if let trace = model.lastTrace {
+                // Keep the top clear so the line shows through, and darken behind the card.
+                LinearGradient(colors: [.clear, .black.opacity(0.6)], startPoint: .top, endPoint: .center)
+                    .ignoresSafeArea()
+                VStack(spacing: 0) {
+                    TraceShareArea(model: model, trace: trace, ready: ready)
+                    card
                 }
+            } else {
+                Color.black.opacity(0.45)
+                    .ignoresSafeArea()
+                card
             }
         }
         .task {
             try? await Task.sleep(for: .milliseconds(450))
             ready = true
+        }
+    }
+
+    private var card: some View {
+        SpaceCard {
+            ZStack(alignment: .topTrailing) {
+                results
+                GlassIconButton(systemName: "trophy.fill", label: "Leaderboard") { model.showLeaderboard() }
+                    .offset(x: 14, y: -14)
+            }
         }
     }
 
@@ -98,5 +111,57 @@ struct GameOverView: View {
                 .monospacedDigit()
         }
         .frame(maxWidth: .infinity)
+    }
+}
+
+/// The space above the results card, where the camera frames the finished run's whole line. Tapping it
+/// shares a picture of the line.
+private struct TraceShareArea: View {
+    let model: GameModel
+    let trace: Trace
+    let ready: Bool
+    @State private var poster: UIImage?
+
+    var body: some View {
+        GeometryReader { proxy in
+            let frame = proxy.frame(in: .global)
+            Group {
+                if let poster {
+                    ShareLink(item: Image(uiImage: poster), subject: Text("Yet Another Line"),
+                              message: Text("I climbed \(score) in Yet Another Line."),
+                              preview: SharePreview("My line", image: Image(uiImage: poster))) {
+                        hint
+                    }
+                    .disabled(!ready)
+                } else {
+                    hint
+                }
+            }
+            .task(id: frame) {
+                // Let the card's entrance settle so the camera only moves once.
+                try? await Task.sleep(for: .milliseconds(80))
+                guard !Task.isCancelled else { return }
+                model.frameTrace(in: CGRect(x: frame.minX + 24, y: frame.minY + 8,
+                                            width: frame.width - 48, height: frame.height - 40))
+            }
+        }
+        .task {
+            poster = TracePoster.render(trace, score: score, mode: model.runDifficulty.badge,
+                                        bestCombo: model.lastRun?.bestCombo ?? 0)
+        }
+    }
+
+    private var score: Int { model.lastRun?.score ?? 0 }
+
+    private var hint: some View {
+        VStack {
+            Spacer()
+            Label("TAP YOUR LINE TO SHARE", systemImage: "square.and.arrow.up")
+                .font(.display(10, .heavy))
+                .tracking(1.5)
+                .foregroundStyle(.white.opacity(0.55))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .contentShape(Rectangle())
     }
 }

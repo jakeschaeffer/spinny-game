@@ -31,6 +31,8 @@ final class GameModel {
     private(set) var passedBest = false
     private(set) var showTutorial = false
     private(set) var lastRun: RunSummary?
+    /// The finished run's whole line, when Trace path is on.
+    private(set) var lastTrace: Trace?
     /// The learning mode in progress, or nil in a normal run.
     private(set) var lesson: Lesson?
     private(set) var lessonOutcome: Lesson.Outcome?
@@ -59,6 +61,12 @@ final class GameModel {
     var difficulty: Difficulty {
         didSet { defaults.set(difficulty.rawValue, forKey: Keys.difficulty) }
     }
+    var tracePath: Bool {
+        didSet {
+            defaults.set(tracePath, forKey: Keys.trace)
+            scene.tracesPath = tracePath
+        }
+    }
     var physics: Physics {
         didSet {
             defaults.set(try? JSONEncoder().encode(physics), forKey: Keys.physics)
@@ -84,6 +92,7 @@ final class GameModel {
         static let sound = "oneMoreLine.sound"
         static let haptics = "oneMoreLine.haptics"
         static let guide = "oneMoreLine.orbitGuide"
+        static let trace = "oneMoreLine.tracePath"
         static let physics = "oneMoreLine.physics"
         static let speed = "oneMoreLine.speed"
         static let lessonSeen = "oneMoreLine.lessonSeen"
@@ -99,7 +108,7 @@ final class GameModel {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        defaults.register(defaults: [Keys.sound: true, Keys.haptics: true, Keys.guide: true, Keys.speed: 1.0])
+        defaults.register(defaults: [Keys.sound: true, Keys.haptics: true, Keys.guide: true, Keys.trace: true, Keys.speed: 1.0])
         let difficulty = defaults.string(forKey: Keys.difficulty).flatMap(Difficulty.init(rawValue:)) ?? .astro
         self.difficulty = difficulty
         runDifficulty = difficulty
@@ -110,6 +119,7 @@ final class GameModel {
         soundEnabled = defaults.bool(forKey: Keys.sound)
         hapticsEnabled = defaults.bool(forKey: Keys.haptics)
         showOrbitGuide = defaults.bool(forKey: Keys.guide)
+        tracePath = defaults.bool(forKey: Keys.trace)
         physics = defaults.data(forKey: Keys.physics).flatMap { try? JSONDecoder().decode(Physics.self, from: $0) } ?? Physics()
         gameSpeed = defaults.double(forKey: Keys.speed)
         scene = GameScene(size: CGSize(width: GameWorld.Tuning.width, height: 870))
@@ -119,6 +129,7 @@ final class GameModel {
         scene.model = self
         scene.feedback = feedback
         scene.showsOrbitGuide = showOrbitGuide
+        scene.tracesPath = tracePath
         scene.physics = physics
         scene.speedMultiplier = CGFloat(gameSpeed)
         scene.showAttract()
@@ -186,7 +197,11 @@ final class GameModel {
         combo = 0
         passedBest = false
         lastRun = nil
+        lastTrace = nil
     }
+
+    /// Pulls the game's camera back so the finished run's line fills `rect` on screen.
+    func frameTrace(in rect: CGRect) { scene.frameTrace(in: rect) }
 
     func pause() {
         guard phase == .playing else { return }
@@ -256,7 +271,7 @@ final class GameModel {
 
     func reachedNewBest() { passedBest = true }
 
-    func runEnded(score: Int, bestCombo: Int, duration: TimeInterval) {
+    func runEnded(score: Int, bestCombo: Int, duration: TimeInterval, trace: Trace? = nil) {
         // Anyone who has finished a run knows the basics, so LAUNCH won't send them to the lesson.
         defaults.set(true, forKey: Keys.lessonSeen)
         let isNewBest = score > bests[runDifficulty] ?? 0
@@ -272,6 +287,7 @@ final class GameModel {
         }
         lastRun = RunSummary(score: score, bestCombo: bestCombo, duration: duration, isNewBest: isNewBest,
                              isNewBestCombo: isNewBestCombo)
+        lastTrace = trace
         gameCenter.submit(best: bests[runDifficulty] ?? 0, for: runDifficulty)
         combo = 0
         tutorialTask?.cancel()

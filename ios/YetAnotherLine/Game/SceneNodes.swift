@@ -230,6 +230,59 @@ final class TrailNode: SKNode {
     }
 }
 
+// MARK: - Trace
+
+/// The whole path of a run, kept on screen when Trace path is on. Long paths are split into chunks so
+/// each frame only rebuilds the newest one.
+final class TraceNode: SKNode {
+    private static let chunkSize = 60
+    private var chunks: [SKShapeNode] = []
+    private var current: [CGPoint] = []
+
+    func reset() {
+        removeAllChildren()
+        chunks.removeAll()
+        current.removeAll()
+    }
+
+    func add(_ point: CGPoint) {
+        if chunks.isEmpty { startChunk() }
+        current.append(point)
+        let path = CGMutablePath()
+        path.addLines(between: current)
+        chunks[chunks.count - 1].path = path
+        if current.count >= TraceNode.chunkSize {
+            current = [point]
+            startChunk()
+        }
+    }
+
+    /// For the end-of-run view: recolour the line like the comet's trail, oldest end to newest, at a
+    /// width that reads on screen once the camera has pulled back.
+    func reveal(lineWidth: CGFloat, duration: TimeInterval) {
+        for (index, chunk) in chunks.enumerated() {
+            let fraction = CGFloat(index + 1) / CGFloat(chunks.count)
+            chunk.strokeColor = Theme.trailColor(at: fraction)
+            chunk.glowWidth = lineWidth * 0.8
+            let start = chunk.lineWidth
+            chunk.run(.customAction(withDuration: duration) { node, elapsed in
+                (node as? SKShapeNode)?.lineWidth = start + (lineWidth - start) * elapsed / CGFloat(duration)
+            })
+        }
+    }
+
+    private func startChunk() {
+        let node = SKShapeNode()
+        node.strokeColor = Theme.violet.withAlphaComponent(0.4)
+        node.lineWidth = 1.6
+        node.lineCap = .round
+        node.lineJoin = .round
+        node.blendMode = .add
+        addChild(node)
+        chunks.append(node)
+    }
+}
+
 // MARK: - Tether
 
 /// The beam from the planet to the comet while orbiting, plus a faint dashed track of the orbit.

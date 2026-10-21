@@ -21,7 +21,7 @@ struct SettingsView: View {
                     Text("Easy has fewer planets, runs a bit slower, and gives you 300 ms to latch onto a planet after hitting a wall. Each mode keeps its own best score. A change applies from your next run.")
                 }
 
-                Section("Feel") {
+                Section {
                     Toggle(isOn: $model.soundEnabled) {
                         Label("Sound", systemImage: "speaker.wave.2.fill")
                     }
@@ -31,6 +31,13 @@ struct SettingsView: View {
                     Toggle(isOn: $model.showOrbitGuide) {
                         Label("Orbit guide", systemImage: "scope")
                     }
+                    Toggle(isOn: $model.tracePath) {
+                        Label("Trace path", systemImage: "scribble.variable")
+                    }
+                } header: {
+                    Text("Feel")
+                } footer: {
+                    Text("Trace path keeps your whole line on screen and shows all of it when the run ends. Tap it there to share a picture.")
                 }
 
                 Section {
