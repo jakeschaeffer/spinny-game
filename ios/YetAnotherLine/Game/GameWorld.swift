@@ -103,6 +103,10 @@ struct GameWorld {
         static let fallMargin: CGFloat = 80
         static let radiusRange: ClosedRange<CGFloat> = 13...32
         static let rowGap: ClosedRange<CGFloat> = 72...108
+        /// Runs open with rows this much further apart than `rowGap`, then fill in as you climb.
+        static let startSpacing: CGFloat = 1.75
+        /// Height at which the rows reach full density (score 500).
+        static let fullDensityHeight: CGFloat = 500 * unitsPerPoint
         /// Gap (beyond both radii) that spawning tries to keep between neighbouring planets.
         static let preferredClearance: CGFloat = 48
         /// Planets reaching below this height stay out of the straight-up launch path.
@@ -315,8 +319,15 @@ struct GameWorld {
         guard spawnsPlanets else { return }
         while nextRowY < cameraBottom + viewHeight + 420 {
             spawnPlanet(nearY: nextRowY)
-            nextRowY += CGFloat.random(in: Tuning.rowGap, using: &rng)
+            nextRowY += CGFloat.random(in: Tuning.rowGap, using: &rng) * Self.rowSpacing(at: nextRowY)
         }
+    }
+
+    /// How much wider than `rowGap` the rows are at height `y`: sparse at the start, easing linearly
+    /// to full density at `fullDensityHeight`.
+    static func rowSpacing(at y: CGFloat) -> CGFloat {
+        let progress = min(max(y / Tuning.fullDensityHeight, 0), 1)
+        return Tuning.startSpacing + (1 - Tuning.startSpacing) * progress
     }
 
     private mutating func spawnPlanet(nearY rowY: CGFloat) {

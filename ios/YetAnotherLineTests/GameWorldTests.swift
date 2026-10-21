@@ -164,6 +164,20 @@ final class GameWorldTests: XCTestCase {
         }
     }
 
+    func testRunsOpenWithFewerPlanetsAndFillInAsYouClimb() {
+        XCTAssertEqual(GameWorld.rowSpacing(at: 0), GameWorld.Tuning.startSpacing)
+        XCTAssertGreaterThan(GameWorld.rowSpacing(at: 1000), GameWorld.rowSpacing(at: 2000))
+        XCTAssertEqual(GameWorld.rowSpacing(at: GameWorld.Tuning.fullDensityHeight), 1)
+        XCTAssertEqual(GameWorld.rowSpacing(at: 20_000), 1, "today's density from score 500 up")
+
+        // At full density the first ~800 units would hold about 800 / 90 ≈ 9 planets.
+        var total = 0
+        for seed in UInt64(1)...25 {
+            total += GameWorld(viewHeight: viewHeight, seed: seed).planets.filter { $0.position.y < 800 }.count
+        }
+        XCTAssertLessThan(Double(total) / 25, 6.5)
+    }
+
     /// Plays whole runs with the autopilot: a smoke test that levels stay flyable and the rules hang together.
     func testAutopilotClimbsAndPlanetsLeaveRoomToFly() {
         var scores: [Int] = []
