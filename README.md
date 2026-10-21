@@ -10,6 +10,7 @@ A Swift rewrite of the game (SpriteKit for gameplay, SwiftUI for menus) with a d
 - Tests: `xcodebuild test -project ios/YetAnotherLine.xcodeproj -scheme YetAnotherLine -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max'`
 - Debug builds accept a `-autopilot` launch argument that plays runs automatically, handy for checking visuals.
 - Physics (spin speed, tether effect, launch power, gravity, out-of-bounds regrab window, game speed) can be tuned in the app's Settings.
+- Shipping an App Store update: see [`ios/RELEASING.md`](ios/RELEASING.md).
 
 ## Web version
 
