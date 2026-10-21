@@ -9,6 +9,8 @@ final class GameModelTests: XCTestCase {
         super.setUp()
         defaults = UserDefaults(suiteName: "GameModelTests")
         defaults.removePersistentDomain(forName: "GameModelTests")
+        // Most tests are about normal runs; a brand-new player's first launch would go to the lesson.
+        defaults.set(true, forKey: "oneMoreLine.lessonSeen")
     }
 
     private func finishRun(_ model: GameModel, in difficulty: Difficulty, score: Int, combo: Int) {
@@ -70,5 +72,52 @@ final class GameModelTests: XCTestCase {
         let reloaded = GameModel(defaults: defaults)
         XCTAssertEqual(reloaded.bests, [.easy: 0, .astro: 0])
         XCTAssertEqual(reloaded.bestCombos, [.easy: 0, .astro: 0])
+    }
+
+    // MARK: Lesson
+
+    func testANewPlayersFirstLaunchStartsTheLessonOnlyOnce() {
+        defaults.removeObject(forKey: "oneMoreLine.lessonSeen")
+        let model = GameModel(defaults: defaults)
+        model.play()
+        XCTAssertNotNil(model.lesson)
+        XCTAssertEqual(model.phase, .playing)
+        model.goToMenu()
+        model.play()
+        XCTAssertNil(model.lesson, "the second launch is a normal run")
+    }
+
+    func testPlayersWithABestScoreSkipTheLesson() {
+        defaults.removeObject(forKey: "oneMoreLine.lessonSeen")
+        defaults.set(40, forKey: "oneMoreLine.best")
+        let model = GameModel(defaults: defaults)
+        model.play()
+        XCTAssertNil(model.lesson)
+    }
+
+    func testALessonCrashExplainsAndRetriesWithoutTouchingBests() {
+        let model = GameModel(defaults: defaults)
+        model.startLesson()
+        model.playerHooked()
+        model.playerLaunched()
+        model.scoreChanged(60)
+        model.lessonCrashed(.wall)
+        XCTAssertEqual(model.phase, .lessonOver)
+        XCTAssertEqual(model.lessonOutcome, .crashed(.wall))
+        XCTAssertEqual(model.bests, [.easy: 0, .astro: 0])
+
+        model.retryLesson()
+        XCTAssertEqual(model.phase, .playing)
+        XCTAssertEqual(model.lesson?.step, .chain, "they'd already launched")
+        XCTAssertEqual(model.score, 0)
+    }
+
+    func testRestartFromPauseReplaysTheLesson() {
+        let model = GameModel(defaults: defaults)
+        model.startLesson()
+        model.pause()
+        model.restart()
+        XCTAssertNotNil(model.lesson)
+        XCTAssertEqual(model.phase, .playing)
     }
 }

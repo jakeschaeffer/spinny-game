@@ -343,7 +343,7 @@ struct GameWorld {
     }
 
     private mutating func spawnPlanet(nearY rowY: CGFloat) {
-        let radius = CGFloat.random(in: Tuning.radiusRange, using: &rng)
+        let radius = CGFloat.random(in: rules.radiusRange, using: &rng)
         var chosen = CGPoint(x: Tuning.width / 2, y: rowY)
         var bestClearance = -CGFloat.infinity
         for _ in 0..<16 {

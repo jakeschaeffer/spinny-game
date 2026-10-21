@@ -23,7 +23,7 @@ struct PauseView: View {
                     }
                     VStack(spacing: 12) {
                         PrimaryButton(title: "RESUME", systemImage: "play.fill") { model.resume() }
-                        SecondaryButton(title: "RESTART", systemImage: "arrow.clockwise") { model.play() }
+                        SecondaryButton(title: "RESTART", systemImage: "arrow.clockwise") { model.restart() }
                         SecondaryButton(title: "SETTINGS", systemImage: "slider.horizontal.3") { model.showSettings = true }
                         SecondaryButton(title: "MENU") { model.goToMenu() }
                     }

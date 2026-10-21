@@ -8,6 +8,8 @@ import SpriteKit
 final class GameModel {
     enum Phase: Equatable {
         case menu, playing, paused, gameOver
+        /// The lesson ended, by a crash or by passing: see `lessonOutcome`.
+        case lessonOver
     }
 
     struct RunSummary: Equatable {
@@ -29,6 +31,9 @@ final class GameModel {
     private(set) var passedBest = false
     private(set) var showTutorial = false
     private(set) var lastRun: RunSummary?
+    /// The learning mode in progress, or nil in a normal run.
+    private(set) var lesson: Lesson?
+    private(set) var lessonOutcome: Lesson.Outcome?
     var showSettings = false
 
     var soundEnabled: Bool {
@@ -69,6 +74,7 @@ final class GameModel {
     let feedback = Feedback()
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private var tutorialTask: Task<Void, Never>?
+    @ObservationIgnored private var lessonTask: Task<Void, Never>?
 
     private enum Keys {
         static let difficulty = "oneMoreLine.difficulty"
@@ -77,6 +83,8 @@ final class GameModel {
         static let guide = "oneMoreLine.orbitGuide"
         static let physics = "oneMoreLine.physics"
         static let speed = "oneMoreLine.speed"
+        static let lessonSeen = "oneMoreLine.lessonSeen"
+        static let lessonPassed = "oneMoreLine.lessonPassed"
 
         static func best(_ difficulty: Difficulty) -> String {
             // Astro keeps the original key, so existing players' best carries over as their Astro best.
@@ -121,11 +129,14 @@ final class GameModel {
     // MARK: Navigation
 
     func play() {
+        // A brand-new player's first launch goes to the lesson.
+        if !defaults.bool(forKey: Keys.lessonSeen), bests.values.allSatisfy({ $0 == 0 }) {
+            startLesson()
+            return
+        }
         feedback.tap()
-        score = 0
-        combo = 0
-        passedBest = false
-        lastRun = nil
+        resetRun()
+        lesson = nil
         runDifficulty = difficulty
         phase = .playing
         scene.startGame(rules: runDifficulty.rules)
@@ -137,6 +148,40 @@ final class GameModel {
             guard !Task.isCancelled else { return }
             self?.showTutorial = false
         }
+    }
+
+    /// Plays the current kind of run again: the lesson from the pause card's restart, otherwise a new run.
+    func restart() {
+        if lesson != nil { retryLesson() } else { play() }
+    }
+
+    func startLesson() {
+        defaults.set(true, forKey: Keys.lessonSeen)
+        lesson = Lesson()
+        beginLessonRun()
+    }
+
+    func retryLesson() {
+        lesson?.retry()
+        beginLessonRun()
+    }
+
+    private func beginLessonRun() {
+        feedback.tap()
+        resetRun()
+        lessonOutcome = nil
+        tutorialTask?.cancel()
+        showTutorial = false
+        phase = .playing
+        scene.startLesson(rules: Lesson.rules)
+        scheduleLessonStep()
+    }
+
+    private func resetRun() {
+        score = 0
+        combo = 0
+        passedBest = false
+        lastRun = nil
     }
 
     func pause() {
@@ -155,7 +200,10 @@ final class GameModel {
     func goToMenu() {
         feedback.tap()
         tutorialTask?.cancel()
+        lessonTask?.cancel()
         showTutorial = false
+        lesson = nil
+        lessonOutcome = nil
         phase = .menu
         scene.showAttract()
     }
@@ -171,13 +219,33 @@ final class GameModel {
 
     // MARK: Scene callbacks
 
-    func scoreChanged(_ value: Int) { score = value }
+    func scoreChanged(_ value: Int) {
+        score = value
+        checkLessonPassed()
+    }
+
+    func playerHooked() {
+        advanceLesson { $0.hooked() }
+    }
+
+    func playerLaunched() {
+        advanceLesson { $0.launched() }
+    }
+
+    func lessonCrashed(_ cause: DeathCause) {
+        lessonTask?.cancel()
+        combo = 0
+        lessonOutcome = .crashed(cause)
+        phase = .lessonOver
+    }
 
     func comboChanged(_ value: Int) { combo = value }
 
     func reachedNewBest() { passedBest = true }
 
     func runEnded(score: Int, bestCombo: Int, duration: TimeInterval) {
+        // Anyone who has finished a run knows the basics, so LAUNCH won't send them to the lesson.
+        defaults.set(true, forKey: Keys.lessonSeen)
         let isNewBest = score > bests[runDifficulty] ?? 0
         if isNewBest {
             bests[runDifficulty] = score
@@ -195,5 +263,42 @@ final class GameModel {
         tutorialTask?.cancel()
         showTutorial = false
         phase = .gameOver
+    }
+
+    // MARK: Lesson
+
+    /// Restarts the tip timer only when the step changes, so latching again and again can't hold a timed
+    /// tip up forever.
+    private func advanceLesson(_ change: (inout Lesson) -> Void) {
+        guard var lesson else { return }
+        let before = lesson.step
+        change(&lesson)
+        self.lesson = lesson
+        if lesson.step != before { scheduleLessonStep() }
+    }
+
+    /// Moves a timed tip along once it's had time to be read.
+    private func scheduleLessonStep() {
+        lessonTask?.cancel()
+        guard let lesson, let duration = lesson.stepDuration else { return }
+        let step = lesson.step
+        lessonTask = Task { [weak self] in
+            try? await Task.sleep(for: duration)
+            guard !Task.isCancelled, let self, self.phase == .playing || self.phase == .paused else { return }
+            self.lesson?.stepTimedOut(step)
+            self.scheduleLessonStep()
+            self.checkLessonPassed()
+        }
+    }
+
+    private func checkLessonPassed() {
+        guard phase == .playing, let lesson, lesson.isPassed(score: score) else { return }
+        lessonTask?.cancel()
+        defaults.set(true, forKey: Keys.lessonPassed)
+        combo = 0
+        lessonOutcome = .passed
+        phase = .lessonOver
+        feedback.newBest()
+        scene.finishLesson()
     }
 }

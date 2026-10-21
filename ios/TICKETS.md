@@ -7,8 +7,8 @@ Feedback from Oct 21, 2026, split into tickets. Each lands as its own commit on 
 | 1 | Ramp up the planet count | Done |
 | 2 | Easy and Astro (Hard) modes, each with its own scores | Done |
 | 3 | Track best combo | Done |
-| 4 | Learning mode | In progress |
-| 5 | Game Center leaderboard | To do |
+| 4 | Learning mode | Done |
+| 5 | Game Center leaderboard | In progress |
 | 6 | Path trace toggle | To do |
 | 7 | Height easter eggs | To do |
 

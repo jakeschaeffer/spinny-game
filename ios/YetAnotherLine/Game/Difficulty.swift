@@ -12,6 +12,7 @@ struct Rules: Equatable {
     /// Real seconds you get to latch onto a planet after flying into a wall, before it counts as a
     /// crash. 0 makes walls fatal straight away.
     var wallGrace: TimeInterval = 0
+    var radiusRange: ClosedRange<CGFloat> = GameWorld.Tuning.radiusRange
 
     /// Row spacing at height `y`: sparse at the start, easing linearly to full density.
     func rowSpacing(at y: CGFloat) -> CGFloat {

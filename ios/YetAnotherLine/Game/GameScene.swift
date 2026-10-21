@@ -24,6 +24,8 @@ final class GameScene: SKScene {
     }
 
     private(set) var mode: Mode = .attract
+    /// Whether the run is the learning mode: no best scores, a finish line, and the orbit guide always on.
+    private(set) var isLesson = false
     private(set) var world: GameWorld
     private var isGamePaused = false
     private var lastUpdateTime: TimeInterval?
@@ -134,13 +136,28 @@ final class GameScene: SKScene {
 
     func showAttract() {
         mode = .attract
+        isLesson = false
         beginRun()
     }
 
     func startGame(rules: Rules) {
         mode = .playing
+        isLesson = false
         beginRun(rules: rules)
         feedback?.prepare()
+    }
+
+    func startLesson(rules: Rules) {
+        mode = .playing
+        isLesson = true
+        beginRun(rules: rules)
+        feedback?.prepare()
+    }
+
+    /// The lesson is passed: the autopilot takes over and flies on behind the results card.
+    func finishLesson() {
+        touchesDown.removeAll()
+        mode = .attract
     }
 
     func setGamePaused(_ paused: Bool) {
@@ -172,8 +189,13 @@ final class GameScene: SKScene {
         markerNodes.removeAll()
         bestLine?.removeFromParent()
         bestLine = nil
-        bestToBeat = model?.best ?? 0
-        if mode == .playing, bestToBeat > 0 {
+        bestToBeat = isLesson ? 0 : model?.best ?? 0
+        if mode == .playing, isLesson {
+            let line = makeLine(y: CGFloat(Lesson.goal) * GameWorld.Tuning.unitsPerPoint, label: "FINISH \(Lesson.goal)",
+                                color: Theme.cyan, alpha: 0.6, alignRight: true)
+            markerLayer.addChild(line)
+            bestLine = line
+        } else if mode == .playing, bestToBeat > 0 {
             let line = makeLine(y: CGFloat(bestToBeat) * GameWorld.Tuning.unitsPerPoint, label: "BEST \(bestToBeat)",
                                 color: Theme.gold, alpha: 0.55, alignRight: true)
             markerLayer.addChild(line)
@@ -272,7 +294,10 @@ final class GameScene: SKScene {
         for event in events {
             switch event {
             case let .hooked(planetID, combo):
-                if live { feedback?.hooked(combo: combo) }
+                if live {
+                    feedback?.hooked(combo: combo)
+                    model?.playerHooked()
+                }
                 if let node = planetNodes[planetID] {
                     node.pulse()
                     let palette = Theme.planetPalettes[node.planet.palette]
@@ -280,15 +305,18 @@ final class GameScene: SKScene {
                     if live, combo > 1 { popup("×\(combo)", at: world.player) }
                 }
             case .launched:
-                if live { feedback?.launched() }
+                if live {
+                    feedback?.launched()
+                    model?.playerLaunched()
+                }
                 tether.hide()
             case .wallHit:
                 guard live else { break }
                 feedback?.wallHit()
                 let x = min(max(world.player.x, 100), GameWorld.Tuning.width - 100)
                 popup("LATCH ON!", at: CGPoint(x: x, y: world.player.y), color: Theme.danger)
-            case .died:
-                explode()
+            case let .died(cause):
+                explode(cause)
             }
         }
     }
@@ -347,7 +375,7 @@ final class GameScene: SKScene {
             highlightedID = highlight?.id
         }
 
-        guard showsOrbitGuide, let target = nearest else {
+        guard showsOrbitGuide || isLesson, let target = nearest else {
             guideRing.isHidden = true
             guideTargetID = nil
             return
@@ -435,7 +463,7 @@ final class GameScene: SKScene {
 
     // MARK: Effects
 
-    private func explode() {
+    private func explode(_ cause: DeathCause) {
         let point = world.player
         player.explode()
         tether.hide()
@@ -460,11 +488,16 @@ final class GameScene: SKScene {
             flash.alpha = 0.3
             flash.run(.fadeOut(withDuration: 0.3))
             let summary = (score: world.score, bestCombo: world.bestCombo, duration: world.time)
+            let isLesson = isLesson
             run(.sequence([
                 .wait(forDuration: 0.9),
                 .run { [weak self] in
                     self?.mode = .gameOver
-                    self?.model?.runEnded(score: summary.score, bestCombo: summary.bestCombo, duration: summary.duration)
+                    if isLesson {
+                        self?.model?.lessonCrashed(cause)
+                    } else {
+                        self?.model?.runEnded(score: summary.score, bestCombo: summary.bestCombo, duration: summary.duration)
+                    }
                 },
             ]), withKey: "gameOver")
         case .attract:

@@ -26,6 +26,10 @@ struct ContentView: View {
                 GameOverView(model: model)
                     .transition(.opacity.combined(with: .scale(scale: 0.96)))
             }
+            if model.phase == .lessonOver {
+                LessonOverView(model: model)
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+            }
         }
         .background(Color.black)
         .animation(.easeInOut(duration: 0.3), value: model.phase)
