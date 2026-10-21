@@ -45,6 +45,7 @@ final class GameScene: SKScene {
     private var demoRestartAt: TimeInterval?
     private var planetSignature = [-1, -1, -1]
     private var trace = Trace()
+    private var shownEggs = Set<EasterEgg>()
     /// The camera has pulled back to show the whole trace and no longer follows the world.
     private var isFramingTrace = false
     private var framedRect: CGRect?
@@ -55,6 +56,8 @@ final class GameScene: SKScene {
     private let backdrop = Backdrop()
     private let walls = WallsNode()
     private let flash = SKSpriteNode(color: .white, size: .zero)
+    /// Easter eggs pass in the far distance: pinned to the screen, behind everything in the world.
+    private let eggLayer = SKNode()
     private let worldLayer = SKNode()
     private let markerLayer = SKNode()
     private let planetLayer = SKNode()
@@ -75,8 +78,11 @@ final class GameScene: SKScene {
 
     #if DEBUG
     private let debugAutopilot = ProcessInfo.processInfo.arguments.contains("-autopilot")
+    /// `-eggs` shows the easter eggs at a tenth of their heights, to check them quickly.
+    private let eggHeightScale = ProcessInfo.processInfo.arguments.contains("-eggs") ? 10 : 1
     #else
     private let debugAutopilot = false
+    private let eggHeightScale = 1
     #endif
 
     override init(size: CGSize) {
@@ -101,7 +107,8 @@ final class GameScene: SKScene {
         flash.zPosition = 90
         flash.alpha = 0
         flash.blendMode = .add
-        for node in [backdrop, walls, flash] { screenLayer.addChild(node) }
+        eggLayer.zPosition = -50
+        for node in [backdrop, eggLayer, walls, flash] { screenLayer.addChild(node) }
 
         addChild(worldLayer)
         markerLayer.zPosition = 1
@@ -221,6 +228,8 @@ final class GameScene: SKScene {
         }
         trace = Trace()
         traceNode.reset()
+        shownEggs.removeAll()
+        eggLayer.removeAllChildren()
 
         guideRing.isHidden = true
         tether.hide()
@@ -509,6 +518,13 @@ final class GameScene: SKScene {
                 feedback?.newBest()
                 model?.reachedNewBest()
                 banner("NEW BEST")
+            }
+            if !isLesson {
+                let visible = CGSize(width: GameWorld.Tuning.width, height: visibleHeight)
+                for egg in EasterEgg.due(at: score * eggHeightScale, shown: shownEggs) {
+                    shownEggs.insert(egg)
+                    eggLayer.addChild(egg.makeNode(visible: visible))
+                }
             }
         }
         let combo = world.liveCombo

@@ -10,7 +10,7 @@ Feedback from Oct 21, 2026, split into tickets. Each lands as its own commit on 
 | 4 | Learning mode | Done |
 | 5 | Game Center leaderboard | Done (needs App Store Connect setup) |
 | 6 | Path trace toggle | Done |
-| 7 | Height easter eggs | In progress |
+| 7 | Height easter eggs | Done |
 
 ## 1. Ramp up the planet count
 
@@ -65,3 +65,5 @@ Decorative sights at set heights, with no hitbox, once per run:
 - 1000: an astronaut floats by, waving
 - 1500: a rocket streaks up past you
 - 2000: a meteor shower
+
+They pass in the far distance, pinned to the screen and behind the planets. Lessons don't show them. To check them quickly, launch a Debug build with `-autopilot -eggs`: `-eggs` shows each one at a tenth of its height.
