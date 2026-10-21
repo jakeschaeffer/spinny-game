@@ -20,6 +20,7 @@ How to ship an update to the App Store, and what went wrong or worked well last 
 |---|---|---|
 | 1.0 | 1–2 | First release. |
 | 1.0.1 | 3 | Glass icon buttons (pause, menu sound/settings) tappable across the whole circle. Submitted Oct 20, 2026; approved by Oct 21. |
+| 1.1 | 4 | Easy and Astro (Hard) modes, learning mode, Game Center leaderboards, best combo, path trace with sharing, planet ramp, easter eggs. Submitted Oct 21, 2026 together with both leaderboards. |
 
 Add a row each time you ship.
 
@@ -88,7 +89,7 @@ You can withdraw a submission from Distribution → App Review until review star
 
 The app submits each mode's best score to its own leaderboard. The leaderboards have to exist in App Store Connect, and the first version that uses them has to ship them, or scores go nowhere.
 
-**Status:** step 1 was done on Oct 21, 2026. Both leaderboards exist (Prepare for Submission), each with an English (U.S.) localization and " point"/" points" suffixes, and Astro is first and the default. Steps 2 and 3 are still to do.
+**Status:** done for 1.1 on Oct 21, 2026. Both leaderboards have an English (U.S.) localization and " point"/" points" suffixes, Astro is first and the default, and both were submitted with version 1.1.
 
 1. In App Store Connect, open Distribution → Game Center (under Growth & Marketing) and add two **classic** leaderboards:
 
@@ -98,10 +99,15 @@ The app submits each mode's best score to its own leaderboard. The leaderboards 
    | Astro high score | `com.jakeschaeffer.onemoreline.score.astro` | Astro (Hard) |
 
    Score format: Integer. Submission type: Best score. Sort order: High to low. Leaderboard IDs can never be reused, even after deletion, so copy them exactly.
-2. On the new version's page, turn on **Game Center** and add both leaderboards. They go live when that version is approved. Don't use a leaderboard's own "Add for Review" button; they ride along with the version.
+2. On the new version's page, check **Game Center** and Save. Then add the version for review, and on each leaderboard's page click **Add for Review** → the existing draft iOS submission. First-time leaderboards must be in the same submission as the app version (the version page itself has no leaderboard picker). They go live when that version is approved.
 3. To test before release, run a development or TestFlight build on a phone signed in to Game Center. Those builds use the Game Center sandbox, which only shows leaderboards that exist in App Store Connect.
 
 The simulator usually isn't signed in to Game Center; the leaderboard button then shows a "Sign in to Game Center" prompt instead.
+
+## Lessons from 1.1
+
+- **First-time leaderboards ride in the version's submission.** Check Game Center on the version page, add the version for review, then use each leaderboard's own Add for Review and pick the existing draft. The draft should list the version plus the leaderboards before you submit.
+- **App Store Connect can hang on a spinner in a resized browser window.** Load the page at its natural size first, then widen it.
 
 ## Lessons from 1.0.1
 
