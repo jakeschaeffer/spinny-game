@@ -347,6 +347,8 @@ final class WallsNode: SKNode {
     private let right = SKSpriteNode(texture: Textures.shared.wall)
     private let leftMotes = SKEmitterNode()
     private let rightMotes = SKEmitterNode()
+    /// Gold walls are bumpers: they bounce the comet back, so they never warn of danger.
+    private var baseColor = Theme.cyan
 
     override init() {
         super.init()
@@ -391,10 +393,26 @@ final class WallsNode: SKNode {
     }
 
     func setDanger(left leftDanger: CGFloat, right rightDanger: CGFloat) {
-        left.color = Theme.cyan.mixed(with: Theme.danger, leftDanger)
+        left.color = baseColor.mixed(with: Theme.danger, leftDanger)
         left.alpha = 0.7 + 0.3 * leftDanger
-        right.color = Theme.cyan.mixed(with: Theme.danger, rightDanger)
+        right.color = baseColor.mixed(with: Theme.danger, rightDanger)
         right.alpha = 0.7 + 0.3 * rightDanger
+    }
+
+    func setBumpers(_ on: Bool) {
+        baseColor = on ? Theme.gold : Theme.cyan
+        for motes in [leftMotes, rightMotes] { motes.particleColor = baseColor }
+        setDanger(left: 0, right: 0)
+    }
+
+    /// A quick flare on the wall the comet just bounced off.
+    func bump(left side: Bool) {
+        let wall = side ? left : right
+        wall.removeAction(forKey: "bump")
+        wall.run(.sequence([
+            .group([.fadeAlpha(to: 1, duration: 0.04), .resize(toWidth: 44, height: wall.size.height, duration: 0.04)]),
+            .group([.fadeAlpha(to: 0.7, duration: 0.3), .resize(toWidth: 26, height: wall.size.height, duration: 0.3)]),
+        ]), withKey: "bump")
     }
 }
 

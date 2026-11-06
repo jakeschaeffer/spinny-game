@@ -19,6 +19,13 @@ final class GameScene: SKScene {
         didSet { world.timeScale = Double(runSpeed) }
     }
     var showsOrbitGuide = true
+    /// Bouncy walls for the run in progress. The menu's demo run never has them.
+    var bumpers = false {
+        didSet {
+            world.bumpers = bumpers
+            walls.setBumpers(bumpers)
+        }
+    }
     var tracesPath = true {
         didSet { traceNode.isHidden = !tracesPath }
     }
@@ -153,6 +160,7 @@ final class GameScene: SKScene {
     func showAttract() {
         mode = .attract
         isLesson = false
+        bumpers = false
         beginRun()
     }
 
@@ -174,6 +182,7 @@ final class GameScene: SKScene {
     func finishLesson() {
         touchesDown.removeAll()
         mode = .attract
+        bumpers = false
     }
 
     func setGamePaused(_ paused: Bool) {
@@ -189,6 +198,7 @@ final class GameScene: SKScene {
         removeAction(forKey: "gameOver")
         world = GameWorld(viewHeight: visibleHeight, seed: .random(in: 0...UInt64.max), physics: physics, rules: rules)
         world.timeScale = Double(runSpeed)
+        world.bumpers = bumpers
         touchesDown.removeAll()
         clock = 0
         reportedScore = -1
@@ -375,6 +385,10 @@ final class GameScene: SKScene {
                     model?.playerLaunched()
                 }
                 tether.hide()
+            case .bumped:
+                guard live else { break }
+                feedback?.bumped()
+                walls.bump(left: world.player.x < GameWorld.Tuning.width / 2)
             case .wallHit:
                 guard live else { break }
                 feedback?.wallHit()
@@ -459,6 +473,8 @@ final class GameScene: SKScene {
     }
 
     private func updateWalls() {
+        // Bumpers are never a danger, and leaving them alone lets a bounce's flare play out.
+        guard !bumpers else { return }
         guard !world.isOrbiting, !world.isDead, mode == .playing || mode == .attract else {
             walls.setDanger(left: 0, right: 0)
             return

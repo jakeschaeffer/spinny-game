@@ -61,6 +61,20 @@ final class GameModel {
     var difficulty: Difficulty {
         didSet { defaults.set(difficulty.rawValue, forKey: Keys.difficulty) }
     }
+    /// Bouncy walls in Easy. Astro never has them.
+    var easyBumpers: Bool {
+        didSet {
+            defaults.set(easyBumpers, forKey: Keys.easyBumpers)
+            applyBumpers()
+        }
+    }
+    /// Bouncy walls in the lesson, switched from the lesson itself.
+    var lessonBumpers: Bool {
+        didSet {
+            defaults.set(lessonBumpers, forKey: Keys.lessonBumpers)
+            applyBumpers()
+        }
+    }
     var tracePath: Bool {
         didSet {
             defaults.set(tracePath, forKey: Keys.trace)
@@ -95,6 +109,8 @@ final class GameModel {
         static let trace = "oneMoreLine.tracePath"
         static let physics = "oneMoreLine.physics"
         static let speed = "oneMoreLine.speed"
+        static let easyBumpers = "oneMoreLine.bumpers.easy"
+        static let lessonBumpers = "oneMoreLine.bumpers.lesson"
         static let lessonSeen = "oneMoreLine.lessonSeen"
         static let lessonPassed = "oneMoreLine.lessonPassed"
 
@@ -108,10 +124,13 @@ final class GameModel {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        defaults.register(defaults: [Keys.sound: true, Keys.haptics: true, Keys.guide: true, Keys.trace: true, Keys.speed: 1.0])
+        defaults.register(defaults: [Keys.sound: true, Keys.haptics: true, Keys.guide: true, Keys.trace: true, Keys.speed: 1.0,
+                                     Keys.easyBumpers: true, Keys.lessonBumpers: true])
         let difficulty = defaults.string(forKey: Keys.difficulty).flatMap(Difficulty.init(rawValue:)) ?? .astro
         self.difficulty = difficulty
         runDifficulty = difficulty
+        easyBumpers = defaults.bool(forKey: Keys.easyBumpers)
+        lessonBumpers = defaults.bool(forKey: Keys.lessonBumpers)
         bests = Dictionary(uniqueKeysWithValues: Difficulty.allCases.map { ($0, defaults.integer(forKey: Keys.best($0))) })
         bestCombos = Dictionary(uniqueKeysWithValues: Difficulty.allCases.map {
             ($0, defaults.integer(forKey: Keys.bestCombo($0)))
@@ -140,6 +159,8 @@ final class GameModel {
     var shownDifficulty: Difficulty { phase == .menu ? difficulty : runDifficulty }
     var best: Int { bests[shownDifficulty] ?? 0 }
     var bestCombo: Int { bestCombos[shownDifficulty] ?? 0 }
+    /// Whether the current run has bumpers: the lesson and Easy each have their own switch.
+    var runHasBumpers: Bool { lesson != nil ? lessonBumpers : runDifficulty == .easy && easyBumpers }
 
     // MARK: Navigation
 
@@ -154,6 +175,7 @@ final class GameModel {
         lesson = nil
         runDifficulty = difficulty
         phase = .playing
+        scene.bumpers = runHasBumpers
         scene.startGame(rules: runDifficulty.rules)
 
         showTutorial = true
@@ -188,8 +210,14 @@ final class GameModel {
         tutorialTask?.cancel()
         showTutorial = false
         phase = .playing
+        scene.bumpers = runHasBumpers
         scene.startLesson(rules: Lesson.rules)
         scheduleLessonStep()
+    }
+
+    /// Switches take effect straight away, even mid-run.
+    private func applyBumpers() {
+        if phase == .playing || phase == .paused { scene.bumpers = runHasBumpers }
     }
 
     private func resetRun() {

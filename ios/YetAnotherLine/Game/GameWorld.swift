@@ -72,6 +72,8 @@ enum WorldEvent: Equatable {
     case launched(speed: CGFloat)
     /// Flew into a wall with Easy's wall grace to spare: latch on in time and the run goes on.
     case wallHit
+    /// Bounced off a wall with bumpers on.
+    case bumped
     case died(DeathCause)
 }
 
@@ -103,6 +105,9 @@ struct GameWorld {
         static let cameraAnchor: CGFloat = 0.4
         static let cameraStiffness: CGFloat = 6.3
         static let fallMargin: CGFloat = 80
+        /// Share of its speed the comet keeps when it bounces off a bumper. The loss lasts only until the
+        /// next latch: launch speed comes from the swing, not from how fast you arrived.
+        static let bumperDamping: CGFloat = 0.85
         static let radiusRange: ClosedRange<CGFloat> = 13...32
         static let rowGap: ClosedRange<CGFloat> = 72...108
         /// Height at which the rows reach full density (score 500). See `Rules.rowSpacing(at:)`.
@@ -118,6 +123,8 @@ struct GameWorld {
     var viewHeight: CGFloat
     var physics: Physics
     let rules: Rules
+    /// Bumpers make the side walls bounce the comet back instead of ending the run. Falling still ends it.
+    var bumpers = false
     var spawnsPlanets = true
     /// How fast world time runs relative to real time (the game speed setting). Only used to keep the
     /// regrab window in real time.
@@ -265,6 +272,7 @@ struct GameWorld {
         guard !isDead else { return [] }
         time += dt
         let h = CGFloat(dt)
+        var events: [WorldEvent] = []
 
         if isOrbiting, let planet = hookedPlanet {
             let omega = spinRate(tether: hookDistance) * spinDirection
@@ -276,13 +284,13 @@ struct GameWorld {
         } else {
             velocity.dy -= Tuning.gravity * physics.gravity * h
             player = CGPoint(x: player.x + velocity.dx * h, y: player.y + velocity.dy * h)
+            if bumpers, bounceOffWalls() { events.append(.bumped) }
         }
         if let remaining = regrabRemaining {
             let left = remaining - dt / max(timeScale, 0.01)
             regrabRemaining = left > 0 ? left : nil
         }
 
-        var events: [WorldEvent] = []
         if let cause = collision() {
             if cause == .wall, rules.wallGrace > 0, !wallGraceSpent {
                 wallGraceSpent = true
@@ -315,8 +323,18 @@ struct GameWorld {
         return boundsViolation()
     }
 
+    /// Mirrors the comet off a wall it's flying into, a little slower. A comet already heading back in
+    /// (say, after letting go past a wall) is left alone.
+    private mutating func bounceOffWalls() -> Bool {
+        let intoLeft = player.x < Tuning.wallInset && velocity.dx < 0
+        let intoRight = player.x > Tuning.width - Tuning.wallInset && velocity.dx > 0
+        guard intoLeft || intoRight else { return false }
+        velocity = CGVector(dx: -velocity.dx * Tuning.bumperDamping, dy: velocity.dy * Tuning.bumperDamping)
+        return true
+    }
+
     private func boundsViolation() -> DeathCause? {
-        if player.x < Tuning.wallInset || player.x > Tuning.width - Tuning.wallInset { return .wall }
+        if !bumpers, player.x < Tuning.wallInset || player.x > Tuning.width - Tuning.wallInset { return .wall }
         if player.y < cameraBottom - Tuning.fallMargin { return .fell }
         return nil
     }

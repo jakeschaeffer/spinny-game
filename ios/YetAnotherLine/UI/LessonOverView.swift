@@ -34,6 +34,12 @@ struct LessonOverView: View {
                             PrimaryButton(title: "PLAY \(model.difficulty.badge)", systemImage: "sparkles") { model.play() }
                         } else {
                             PrimaryButton(title: "TRY AGAIN", systemImage: "arrow.clockwise") { model.retryLesson() }
+                            if model.lessonOutcome == .crashed(.wall), !model.lessonBumpers {
+                                SecondaryButton(title: "TRY WITH BUMPERS", systemImage: "shield.fill") {
+                                    model.lessonBumpers = true
+                                    model.retryLesson()
+                                }
+                            }
                         }
                         SecondaryButton(title: "MENU") { model.goToMenu() }
                     }

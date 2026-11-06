@@ -60,6 +60,7 @@ struct SecondaryButton: View {
             .font(.display(14, .bold))
             .tracking(1.5)
             .foregroundStyle(.white.opacity(0.9))
+            .padding(.horizontal, 28)
             .frame(minWidth: 220, minHeight: 50)
             .background(Capsule().fill(.white.opacity(0.07)))
             .overlay(Capsule().strokeBorder(.white.opacity(0.22), lineWidth: 1))

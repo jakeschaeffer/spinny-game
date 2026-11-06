@@ -18,7 +18,15 @@ struct SettingsView: View {
                 } header: {
                     Text("Mode")
                 } footer: {
-                    Text("Easy has fewer planets, runs a bit slower, and gives you 300 ms to latch onto a planet after hitting a wall. Each mode keeps its own best score. A change applies from your next run.")
+                    Text("Easy has fewer planets and runs a bit slower. Each mode keeps its own best score, and a mode change applies from your next run.")
+                }
+
+                Section {
+                    Toggle(isOn: $model.easyBumpers) {
+                        Label("Bumpers in Easy", systemImage: "arrow.uturn.backward.circle")
+                    }
+                } footer: {
+                    Text("Bumpers turn the side walls gold and bounce you back instead of ending the run. With them off, Easy gives you 300 ms to latch onto a planet after hitting a wall. Astro has neither.")
                 }
 
                 Section {

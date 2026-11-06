@@ -223,6 +223,54 @@ final class GameWorldTests: XCTestCase {
         XCTAssertEqual(run(&world, seconds: 0.05), [.died(.wall)], "no second grace for the same flight")
     }
 
+    // MARK: Bumpers
+
+    func testBumpersBounceYouOffTheWallALittleSlower() {
+        var world = headingForTheWall(.astro)
+        world.bumpers = true
+        XCTAssertEqual(run(&world, seconds: 0.5), [.bumped])
+        XCTAssertEqual(world.velocity.dx, 200 * GameWorld.Tuning.bumperDamping, accuracy: 0.001, "mirrored and slowed")
+        XCTAssertEqual(run(&world, seconds: 1), [], "heading back across, nothing else happens")
+        XCTAssertGreaterThan(world.player.x, GameWorld.Tuning.wallInset)
+    }
+
+    func testBumpersBeatEasysWallGrace() {
+        var world = headingForTheWall(.easy)
+        world.bumpers = true
+        XCTAssertEqual(run(&world, seconds: 0.5), [.bumped], "a bounce, not a LATCH ON! warning")
+    }
+
+    func testLatchingAfterABounceLaunchesAtFullSpeed() {
+        var bounced = headingForTheWall(.astro)
+        bounced.bumpers = true
+        _ = run(&bounced, seconds: 0.5)
+        XCTAssertEqual(bounced.press(), [.hooked(planetID: 1, combo: 1)])
+        _ = run(&bounced, seconds: 0.3)
+        guard case let .launched(afterBounce)? = bounced.release().first else { return XCTFail("expected a launch") }
+
+        var clean = GameWorld(viewHeight: viewHeight, player: bounced.player, velocity: .zero,
+                              planets: [planet(1, x: 60, y: 80)])
+        _ = clean.press()
+        guard case let .launched(fresh)? = clean.release().first else { return XCTFail("expected a launch") }
+        XCTAssertEqual(afterBounce, fresh, accuracy: 0.001, "the bounce's slowdown ends at the next latch")
+    }
+
+    /// Letting go mid-swing can leave the comet past a wall, still heading out.
+    func testBumpersBringBackACometThatIsAlreadyPastTheWall() {
+        var world = GameWorld(viewHeight: viewHeight, player: CGPoint(x: -30, y: 0), velocity: CGVector(dx: -200, dy: 0),
+                              planets: [])
+        world.bumpers = true
+        XCTAssertEqual(world.step(step), [.bumped], "bounces at once, no regrab window or crash")
+        XCTAssertEqual(run(&world, seconds: 1), [], "one bounce only: it's heading back in")
+        XCTAssertGreaterThan(world.player.x, GameWorld.Tuning.wallInset, "back inside the walls")
+    }
+
+    func testBumpersDontSaveYouFromFalling() {
+        var world = GameWorld(viewHeight: viewHeight, seed: 7)
+        world.bumpers = true
+        XCTAssertEqual(run(&world, seconds: 30), [.died(.fell)])
+    }
+
     /// Plays whole runs with the autopilot: a smoke test that levels stay flyable and the rules hang together.
     func testAutopilotClimbsAndPlanetsLeaveRoomToFly() {
         for difficulty in Difficulty.allCases { autopilotSmokeTest(difficulty) }
