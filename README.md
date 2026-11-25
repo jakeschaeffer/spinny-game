@@ -12,6 +12,17 @@ A Swift rewrite of the game (SpriteKit for gameplay, SwiftUI for menus) with a d
 - Physics (spin speed, tether effect, launch power, gravity, out-of-bounds regrab window, game speed) can be tuned in the app's Settings.
 - Shipping an App Store update: see [`ios/RELEASING.md`](ios/RELEASING.md).
 
+## Apple TV app (same project)
+
+The `YetAnotherLineTV` scheme builds the game for Apple TV from the same code. The playfield is a column down the middle of the screen, with the score and tips either side.
+
+- Rest your thumb on the Siri Remote's touch surface to latch onto a planet and lift it to launch; no click needed. Holding a click works too, as does a game controller's A button. Play/Pause or Back pauses. "Touch to latch" can be turned off in the app's Settings.
+- Shared game code is in `ios/YetAnotherLine/`; the TV's screens, remote handling and icon are in `ios/YetAnotherLineTV/`. The iPhone's screens are wrapped in `#if os(iOS)`.
+- Run it: open the project, pick the `YetAnotherLineTV` scheme and an Apple TV or Apple TV simulator.
+- Tests: `xcodebuild test -project ios/YetAnotherLine.xcodeproj -scheme YetAnotherLineTV -destination 'platform=tvOS Simulator,name=Apple TV 4K (4th generation) (at 1080p)'` drives the app with the remote's buttons. The touch surface can't be scripted, so try touch-to-latch on a real Apple TV.
+- Debug builds also accept `-noGameCenter` (skips the sign-in screen) and `-screen pause|settings|lesson|play` (opens that screen at launch).
+- The icon and Top Shelf images are drawn by `swift Tools/TVArt.swift`, run from `ios/`.
+
 ## Web version
 
 The original React + Vite version lives in `src/`. Run it with `npm install && npm run dev`.

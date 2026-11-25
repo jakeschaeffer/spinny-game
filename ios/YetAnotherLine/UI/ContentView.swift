@@ -1,3 +1,5 @@
+// The iPhone's version of this screen; Apple TV's are in YetAnotherLineTV/.
+#if os(iOS)
 import SpriteKit
 import SwiftUI
 
@@ -50,3 +52,4 @@ struct ContentView: View {
         }
     }
 }
+#endif

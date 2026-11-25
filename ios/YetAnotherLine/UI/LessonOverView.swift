@@ -1,3 +1,5 @@
+// The iPhone's version of this screen; Apple TV's are in YetAnotherLineTV/.
+#if os(iOS)
 import SwiftUI
 
 /// The end of a lesson run: what went wrong and a retry, or the all-clear to play for real.
@@ -71,3 +73,4 @@ struct LessonOverView: View {
         }
     }
 }
+#endif

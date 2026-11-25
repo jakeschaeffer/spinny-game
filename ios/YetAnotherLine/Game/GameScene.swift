@@ -2,8 +2,18 @@ import SpriteKit
 import UIKit
 
 /// Renders a `GameWorld` and feeds it touches. The scene matches the view's size in points; the world
-/// layer and the screen-fixed layer are scaled so the 400-unit-wide playfield spans the screen exactly.
+/// layer and the screen-fixed layer are scaled so the 400-unit-wide playfield spans a phone's screen
+/// exactly. On a wide screen (Apple TV) the playfield is a column in the middle and the starfield
+/// carries on to either side.
 final class GameScene: SKScene {
+    /// The widest the playfield gets, as a fraction of the view's height.
+    static let maxPlayfieldAspect: CGFloat = 0.6
+
+    /// The playfield's width in view points.
+    static func playfieldWidth(in size: CGSize) -> CGFloat {
+        min(size.width, size.height * maxPlayfieldAspect)
+    }
+
     enum Mode {
         /// Menu backdrop: the autopilot flies a silent demo run.
         case attract
@@ -40,7 +50,8 @@ final class GameScene: SKScene {
     private var isGamePaused = false
     private var lastUpdateTime: TimeInterval?
     private var clock: TimeInterval = 0
-    private var touchesDown = Set<UITouch>()
+    /// Everything holding right now: fingers on a phone, the remote's touch surface and buttons on Apple TV.
+    private var holds = Set<AnyHashable>()
     private var shakeRemaining: TimeInterval = 0
     private var shakeStrength: CGFloat = 0
     private var reportedScore = -1
@@ -78,8 +89,9 @@ final class GameScene: SKScene {
     private var bestLine: SKNode?
     /// Points per world unit.
     private var unit: CGFloat = 1
-    /// Height of the view in world units.
+    /// Size of the view in world units.
     private var visibleHeight: CGFloat { size.height / unit }
+    private var visible: CGSize { CGSize(width: size.width / unit, height: visibleHeight) }
     /// How fast a live run plays: the game speed setting times the mode's own speed.
     private var runSpeed: CGFloat { speedMultiplier * CGFloat(world.rules.speed) }
 
@@ -93,7 +105,7 @@ final class GameScene: SKScene {
     #endif
 
     override init(size: CGSize) {
-        world = GameWorld(viewHeight: size.height * GameWorld.Tuning.width / max(size.width, 1),
+        world = GameWorld(viewHeight: size.height * GameWorld.Tuning.width / max(GameScene.playfieldWidth(in: size), 1),
                           seed: .random(in: 0...UInt64.max))
         super.init(size: size)
         scaleMode = .resizeFill
@@ -138,10 +150,10 @@ final class GameScene: SKScene {
 
     private func layoutForSize() {
         guard size.width > 0, size.height > 0 else { return }
-        unit = size.width / GameWorld.Tuning.width
+        unit = GameScene.playfieldWidth(in: size) / GameWorld.Tuning.width
         worldLayer.setScale(unit)
         screenLayer.setScale(unit)
-        let visible = CGSize(width: GameWorld.Tuning.width, height: visibleHeight)
+        let visible = visible
         backdrop.build(for: visible)
         walls.layout(height: visible.height)
         flash.size = CGSize(width: visible.width + 60, height: visible.height + 60)
@@ -180,7 +192,7 @@ final class GameScene: SKScene {
 
     /// The lesson is passed: the autopilot takes over and flies on behind the results card.
     func finishLesson() {
-        touchesDown.removeAll()
+        holds.removeAll()
         mode = .attract
         bumpers = false
     }
@@ -188,7 +200,7 @@ final class GameScene: SKScene {
     func setGamePaused(_ paused: Bool) {
         isGamePaused = paused
         isPaused = paused
-        touchesDown.removeAll()
+        holds.removeAll()
         lastUpdateTime = nil
     }
 
@@ -199,7 +211,7 @@ final class GameScene: SKScene {
         world = GameWorld(viewHeight: visibleHeight, seed: .random(in: 0...UInt64.max), physics: physics, rules: rules)
         world.timeScale = Double(runSpeed)
         world.bumpers = bumpers
-        touchesDown.removeAll()
+        holds.removeAll()
         clock = 0
         reportedScore = -1
         reportedCombo = -1
@@ -251,26 +263,33 @@ final class GameScene: SKScene {
 
     // MARK: Input
 
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+    /// Something started holding. The comet latches on the first hold and stays latched until the last ends.
+    func holdBegan(_ id: AnyHashable) {
         guard mode == .playing, !isGamePaused else { return }
-        let wasIdle = touchesDown.isEmpty
-        touchesDown.formUnion(touches)
+        let wasIdle = holds.isEmpty
+        holds.insert(id)
         if wasIdle { pressDown() }
     }
 
+    func holdEnded(_ id: AnyHashable) {
+        guard holds.remove(id) != nil else { return }
+        if holds.isEmpty, mode == .playing { liftUp() }
+    }
+
+    // On Apple TV the remote's touches and clicks arrive through `RemoteWindow` instead.
+    #if !os(tvOS)
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        touches.forEach(holdBegan)
+    }
+
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        liftTouches(touches)
+        touches.forEach(holdEnded)
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        liftTouches(touches)
+        touches.forEach(holdEnded)
     }
-
-    private func liftTouches(_ touches: Set<UITouch>) {
-        guard !touchesDown.isEmpty else { return }
-        touchesDown.subtract(touches)
-        if touchesDown.isEmpty, mode == .playing { liftUp() }
-    }
+    #endif
 
     private func pressDown() {
         handle(world.press())
@@ -536,7 +555,7 @@ final class GameScene: SKScene {
                 banner("NEW BEST")
             }
             if !isLesson {
-                let visible = CGSize(width: GameWorld.Tuning.width, height: visibleHeight)
+                let visible = visible
                 for egg in EasterEgg.due(at: score * eggHeightScale, shown: shownEggs) {
                     shownEggs.insert(egg)
                     eggLayer.addChild(egg.makeNode(visible: visible))

@@ -75,6 +75,10 @@ final class GameModel {
             applyBumpers()
         }
     }
+    /// Apple TV only: resting a thumb on the remote's touch surface latches, without clicking.
+    var touchToLatch: Bool {
+        didSet { defaults.set(touchToLatch, forKey: Keys.touchToLatch) }
+    }
     var tracePath: Bool {
         didSet {
             defaults.set(tracePath, forKey: Keys.trace)
@@ -107,6 +111,7 @@ final class GameModel {
         static let haptics = "oneMoreLine.haptics"
         static let guide = "oneMoreLine.orbitGuide"
         static let trace = "oneMoreLine.tracePath"
+        static let touchToLatch = "oneMoreLine.touchToLatch"
         static let physics = "oneMoreLine.physics"
         static let speed = "oneMoreLine.speed"
         static let easyBumpers = "oneMoreLine.bumpers.easy"
@@ -125,6 +130,7 @@ final class GameModel {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         defaults.register(defaults: [Keys.sound: true, Keys.haptics: true, Keys.guide: true, Keys.trace: true, Keys.speed: 1.0,
+                                     Keys.touchToLatch: true,
                                      Keys.easyBumpers: true, Keys.lessonBumpers: true])
         let difficulty = defaults.string(forKey: Keys.difficulty).flatMap(Difficulty.init(rawValue:)) ?? .astro
         self.difficulty = difficulty
@@ -139,6 +145,7 @@ final class GameModel {
         hapticsEnabled = defaults.bool(forKey: Keys.haptics)
         showOrbitGuide = defaults.bool(forKey: Keys.guide)
         tracePath = defaults.bool(forKey: Keys.trace)
+        touchToLatch = defaults.bool(forKey: Keys.touchToLatch)
         physics = defaults.data(forKey: Keys.physics).flatMap { try? JSONDecoder().decode(Physics.self, from: $0) } ?? Physics()
         gameSpeed = defaults.double(forKey: Keys.speed)
         scene = GameScene(size: CGSize(width: GameWorld.Tuning.width, height: 870))

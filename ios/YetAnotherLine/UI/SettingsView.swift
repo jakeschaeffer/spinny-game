@@ -1,3 +1,5 @@
+// The iPhone's version of this screen; Apple TV's are in YetAnotherLineTV/.
+#if os(iOS)
 import SwiftUI
 
 struct SettingsView: View {
@@ -130,3 +132,4 @@ private struct SliderRow<Value: BinaryFloatingPoint>: View where Value.Stride: B
         .padding(.vertical, 2)
     }
 }
+#endif
