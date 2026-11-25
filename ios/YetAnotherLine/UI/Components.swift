@@ -13,6 +13,8 @@ extension ShapeStyle where Self == LinearGradient {
     }
 }
 
+// The rest are the iPhone's controls; Apple TV's focusable ones are in YetAnotherLineTV/.
+#if os(iOS)
 struct PressableButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -125,3 +127,4 @@ extension View {
         }
     }
 }
+#endif

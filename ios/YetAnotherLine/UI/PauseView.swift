@@ -1,3 +1,5 @@
+// The iPhone's version of this screen; Apple TV's are in YetAnotherLineTV/.
+#if os(iOS)
 import SwiftUI
 
 struct PauseView: View {
@@ -32,3 +34,4 @@ struct PauseView: View {
         }
     }
 }
+#endif

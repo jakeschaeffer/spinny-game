@@ -1,3 +1,5 @@
+// The iPhone's version of this screen; Apple TV's are in YetAnotherLineTV/.
+#if os(iOS)
 import SwiftUI
 
 struct MenuView: View {
@@ -135,3 +137,4 @@ struct MenuView: View {
         .overlay(Capsule().strokeBorder(.white.opacity(0.12), lineWidth: 1))
     }
 }
+#endif

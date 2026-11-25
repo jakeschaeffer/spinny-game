@@ -14,12 +14,22 @@
 			remoteGlobalIDString = 0E1A00000000000000000E01;
 			remoteInfo = YetAnotherLine;
 		};
+		0E1A00000000000000000103 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0E1A00000000000000000F01 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0E1A00000000000000000E03;
+			remoteInfo = YetAnotherLineTV;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		0E1A00000000000000000A01 /* YetAnotherLine.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = YetAnotherLine.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0E1A00000000000000000A02 /* YetAnotherLineTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YetAnotherLineTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0E1A00000000000000000A03 /* YetAnotherLine-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "YetAnotherLine-Info.plist"; sourceTree = "<group>"; };
+		0E1A00000000000000000A04 /* YetAnotherLineTV.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = YetAnotherLineTV.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0E1A00000000000000000A05 /* YetAnotherLineTV-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "YetAnotherLineTV-Info.plist"; sourceTree = "<group>"; };
+		0E1A00000000000000000A06 /* YetAnotherLineTVUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YetAnotherLineTVUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -31,6 +41,16 @@
 		0E1A00000000000000000B02 /* YetAnotherLineTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = YetAnotherLineTests;
+			sourceTree = "<group>";
+		};
+		0E1A00000000000000000B03 /* YetAnotherLineTV */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = YetAnotherLineTV;
+			sourceTree = "<group>";
+		};
+		0E1A00000000000000000B04 /* YetAnotherLineTVUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = YetAnotherLineTVUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -50,6 +70,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		0E1A00000000000000000C07 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0E1A00000000000000000C0A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -57,8 +91,11 @@
 			isa = PBXGroup;
 			children = (
 				0E1A00000000000000000B01 /* YetAnotherLine */,
+				0E1A00000000000000000B03 /* YetAnotherLineTV */,
 				0E1A00000000000000000B02 /* YetAnotherLineTests */,
+				0E1A00000000000000000B04 /* YetAnotherLineTVUITests */,
 				0E1A00000000000000000A03 /* YetAnotherLine-Info.plist */,
+				0E1A00000000000000000A05 /* YetAnotherLineTV-Info.plist */,
 				0E1A00000000000000000D02 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -68,6 +105,8 @@
 			children = (
 				0E1A00000000000000000A01 /* YetAnotherLine.app */,
 				0E1A00000000000000000A02 /* YetAnotherLineTests.xctest */,
+				0E1A00000000000000000A04 /* YetAnotherLineTV.app */,
+				0E1A00000000000000000A06 /* YetAnotherLineTVUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -120,6 +159,52 @@
 			productReference = 0E1A00000000000000000A02 /* YetAnotherLineTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		0E1A00000000000000000E03 /* YetAnotherLineTV */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0E1A00000000000000000204 /* Build configuration list for PBXNativeTarget "YetAnotherLineTV" */;
+			buildPhases = (
+				0E1A00000000000000000C08 /* Sources */,
+				0E1A00000000000000000C07 /* Frameworks */,
+				0E1A00000000000000000C09 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				0E1A00000000000000000B01 /* YetAnotherLine */,
+				0E1A00000000000000000B03 /* YetAnotherLineTV */,
+			);
+			name = YetAnotherLineTV;
+			packageProductDependencies = (
+			);
+			productName = YetAnotherLineTV;
+			productReference = 0E1A00000000000000000A04 /* YetAnotherLineTV.app */;
+			productType = "com.apple.product-type.application";
+		};
+		0E1A00000000000000000E04 /* YetAnotherLineTVUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0E1A00000000000000000205 /* Build configuration list for PBXNativeTarget "YetAnotherLineTVUITests" */;
+			buildPhases = (
+				0E1A00000000000000000C0B /* Sources */,
+				0E1A00000000000000000C0A /* Frameworks */,
+				0E1A00000000000000000C0C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0E1A00000000000000000104 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				0E1A00000000000000000B04 /* YetAnotherLineTVUITests */,
+			);
+			name = YetAnotherLineTVUITests;
+			packageProductDependencies = (
+			);
+			productName = YetAnotherLineTVUITests;
+			productReference = 0E1A00000000000000000A06 /* YetAnotherLineTVUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -136,6 +221,13 @@
 					0E1A00000000000000000E02 = {
 						CreatedOnToolsVersion = 27.0;
 						TestTargetID = 0E1A00000000000000000E01;
+					};
+					0E1A00000000000000000E03 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					0E1A00000000000000000E04 = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = 0E1A00000000000000000E03;
 					};
 				};
 			};
@@ -155,6 +247,8 @@
 			targets = (
 				0E1A00000000000000000E01 /* YetAnotherLine */,
 				0E1A00000000000000000E02 /* YetAnotherLineTests */,
+				0E1A00000000000000000E03 /* YetAnotherLineTV */,
+				0E1A00000000000000000E04 /* YetAnotherLineTVUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -168,6 +262,20 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		0E1A00000000000000000C06 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0E1A00000000000000000C09 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0E1A00000000000000000C0C /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -191,6 +299,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		0E1A00000000000000000C08 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0E1A00000000000000000C0B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -198,6 +320,11 @@
 			isa = PBXTargetDependency;
 			target = 0E1A00000000000000000E01 /* YetAnotherLine */;
 			targetProxy = 0E1A00000000000000000101 /* PBXContainerItemProxy */;
+		};
+		0E1A00000000000000000104 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0E1A00000000000000000E03 /* YetAnotherLineTV */;
+			targetProxy = 0E1A00000000000000000103 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -365,6 +492,110 @@
 			};
 			name = Release;
 		};
+		0E1A00000000000000000307 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = YetAnotherLine.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3BGFWC629H;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "YetAnotherLineTV-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Yet Another Line";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.arcade-games";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jakeschaeffer.onemoreline;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = appletvos;
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 3;
+				TVOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Debug;
+		};
+		0E1A00000000000000000308 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = YetAnotherLine.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3BGFWC629H;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "YetAnotherLineTV-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Yet Another Line";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.arcade-games";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jakeschaeffer.onemoreline;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = appletvos;
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 3;
+				TVOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Release;
+		};
+		0E1A00000000000000000309 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3BGFWC629H;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jakeschaeffer.onemoreline.tvuitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = appletvos;
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 3;
+				TEST_TARGET_NAME = YetAnotherLineTV;
+				TVOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Debug;
+		};
+		0E1A0000000000000000030A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3BGFWC629H;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jakeschaeffer.onemoreline.tvuitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = appletvos;
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 3;
+				TEST_TARGET_NAME = YetAnotherLineTV;
+				TVOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -391,6 +622,24 @@
 			buildConfigurations = (
 				0E1A00000000000000000305 /* Debug */,
 				0E1A00000000000000000306 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0E1A00000000000000000204 /* Build configuration list for PBXNativeTarget "YetAnotherLineTV" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0E1A00000000000000000307 /* Debug */,
+				0E1A00000000000000000308 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0E1A00000000000000000205 /* Build configuration list for PBXNativeTarget "YetAnotherLineTVUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0E1A00000000000000000309 /* Debug */,
+				0E1A0000000000000000030A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

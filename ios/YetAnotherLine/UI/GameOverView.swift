@@ -1,3 +1,5 @@
+// The iPhone's version of this screen; Apple TV's are in YetAnotherLineTV/.
+#if os(iOS)
 import SwiftUI
 
 struct GameOverView: View {
@@ -165,3 +167,4 @@ private struct TraceShareArea: View {
         .contentShape(Rectangle())
     }
 }
+#endif

@@ -115,3 +115,22 @@ The simulator usually isn't signed in to Game Center; the leaderboard button the
 - **Simulator taps are too perfect.** The pause bug only showed with off-center or drifting presses. On iOS 26, `glassEffect` isn't hit-testable, so any custom button using it needs `.contentShape(...)`; the iOS 17–25 fallback hid the bug.
 - **App Store Connect's sidebar collapses in a narrow browser window.** Widen the window to see the "+" next to "iOS App".
 - **Don't leave the page while "Add for Review" says Processing.** The first attempt didn't create a submission because the page was left mid-request; clicking it again worked.
+
+## Apple TV
+
+The Apple TV app is the `YetAnotherLineTV` target in the same project. It has not been uploaded yet, so the steps below are the plan, not a record.
+
+| | |
+|---|---|
+| Scheme | `YetAnotherLineTV` |
+| Bundle ID | `com.jakeschaeffer.onemoreline`, the same as the iPhone app, so both share one App Store record, purchases and the Game Center leaderboards |
+| Version | Its own `MARKETING_VERSION` (1.0) and `CURRENT_PROJECT_VERSION` (1) in the `YetAnotherLineTV` build settings; tvOS builds are numbered separately from iOS ones |
+| Minimum tvOS | 26.0 |
+| Icon and Top Shelf | `YetAnotherLineTV/Assets.xcassets`, drawn by `swift Tools/TVArt.swift` |
+
+Before the first upload:
+
+1. Try it on a real Apple TV. The simulator tests cover clicks, focus and pausing, but not the remote's touch surface, which is how most people will play.
+2. In App Store Connect, add tvOS as a platform to the existing app (the "+" next to the platform list on the app's page).
+3. Archive with `-scheme YetAnotherLineTV -destination 'generic/platform=tvOS'` and export as for iOS. tvOS needs its own screenshots (1920 × 1080 or 3840 × 2160).
+

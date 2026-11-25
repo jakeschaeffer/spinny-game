@@ -439,13 +439,17 @@ final class Backdrop: SKNode {
                                     size: CGSize(width: size.width + 60, height: size.height + 60))
         addChild(gradient)
 
-        addLayer(factor: 0.05, span: size.height * 1.6, z: 1, seed: 21, populate: Backdrop.nebulae)
+        // Counts are for a phone-width view; a wider one gets more of everything to keep the same density.
+        let width = size.width
+        let density = max(1, width / GameWorld.Tuning.width)
+        func scaled(_ count: Int) -> Int { Int((CGFloat(count) * density).rounded()) }
+        addLayer(factor: 0.05, span: size.height * 1.6, z: 1, seed: 21, populate: Backdrop.nebulae(count: scaled(4), width: width))
         addLayer(factor: 0.03, span: size.height, z: 2, seed: 31,
-                 populate: Backdrop.stars(count: 120, sizes: 0.8...1.7, alphas: 0.3...0.75, twinkle: 0.3, halo: false))
+                 populate: Backdrop.stars(count: scaled(120), width: width, sizes: 0.8...1.7, alphas: 0.3...0.75, twinkle: 0.3, halo: false))
         addLayer(factor: 0.1, span: size.height, z: 3, seed: 41,
-                 populate: Backdrop.stars(count: 55, sizes: 1.3...2.3, alphas: 0.45...0.9, twinkle: 0.25, halo: false))
+                 populate: Backdrop.stars(count: scaled(55), width: width, sizes: 1.3...2.3, alphas: 0.45...0.9, twinkle: 0.25, halo: false))
         addLayer(factor: 0.22, span: size.height, z: 4, seed: 51,
-                 populate: Backdrop.stars(count: 16, sizes: 2...3.2, alphas: 0.7...1, twinkle: 0.4, halo: true))
+                 populate: Backdrop.stars(count: scaled(16), width: width, sizes: 2...3.2, alphas: 0.7...1, twinkle: 0.4, halo: true))
     }
 
     func update(cameraBottom: CGFloat) {
@@ -471,14 +475,18 @@ final class Backdrop: SKNode {
         layers.append(Layer(tiles: tiles, factor: factor, span: span))
     }
 
-    private static func nebulae(tile: SKNode, span: CGFloat, rng: inout SplitMix64) {
-        for index in 0..<4 {
+    private static func nebulae(count: Int, width: CGFloat) -> (SKNode, CGFloat, inout SplitMix64) -> Void {
+        { tile, span, rng in nebulae(count: count, reach: width / 2 - 20, tile: tile, span: span, rng: &rng) }
+    }
+
+    private static func nebulae(count: Int, reach xReach: CGFloat, tile: SKNode, span: CGFloat, rng: inout SplitMix64) {
+        for index in 0..<count {
             let size = CGFloat.random(in: 280...460, using: &rng)
             let cloud = SKSpriteNode(texture: Textures.shared.nebulae[index % 3],
                                      size: CGSize(width: size, height: size * .random(in: 0.7...1.1, using: &rng)))
             // Keep each cloud inside its own tile so the wrap-around never pops.
             let reach = size * 0.56
-            cloud.position = CGPoint(x: .random(in: -180...180, using: &rng),
+            cloud.position = CGPoint(x: .random(in: -xReach...xReach, using: &rng),
                                      y: .random(in: reach...max(reach, span - reach), using: &rng))
             cloud.zRotation = .random(in: 0...(2 * .pi), using: &rng)
             cloud.color = Theme.nebulaTints.randomElement(using: &rng) ?? Theme.violet
@@ -489,15 +497,16 @@ final class Backdrop: SKNode {
         }
     }
 
-    private static func stars(count: Int, sizes: ClosedRange<CGFloat>, alphas: ClosedRange<CGFloat>,
+    private static func stars(count: Int, width: CGFloat, sizes: ClosedRange<CGFloat>, alphas: ClosedRange<CGFloat>,
                               twinkle: Double, halo: Bool) -> (SKNode, CGFloat, inout SplitMix64) -> Void {
-        { tile, span, rng in
+        let reach = width / 2 + 5
+        return { tile, span, rng in
             for _ in 0..<count {
                 let star = SKSpriteNode(texture: Textures.shared.dot)
                 let side = CGFloat.random(in: sizes, using: &rng)
                 let alpha = CGFloat.random(in: alphas, using: &rng)
                 star.size = CGSize(width: side, height: side)
-                star.position = CGPoint(x: .random(in: -205...205, using: &rng), y: .random(in: 2...(span - 2), using: &rng))
+                star.position = CGPoint(x: .random(in: -reach...reach, using: &rng), y: .random(in: 2...(span - 2), using: &rng))
                 star.color = Theme.starTints.randomElement(using: &rng) ?? .white
                 star.colorBlendFactor = 1
                 star.alpha = alpha
